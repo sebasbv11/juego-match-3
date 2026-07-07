@@ -1,0 +1,69 @@
+import http from "node:http";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const port = Number(process.env.PORT || process.argv[2] || 4173);
+const host = "127.0.0.1";
+
+const contentTypes = new Map([
+  [".html", "text/html; charset=utf-8"],
+  [".css", "text/css; charset=utf-8"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".mjs", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".md", "text/markdown; charset=utf-8"]
+]);
+
+function createStaticServer() {
+  return http.createServer(async (request, response) => {
+    try {
+      const requestUrl = new URL(request.url, `http://${request.headers.host}`);
+      const pathname = decodeURIComponent(requestUrl.pathname);
+      const relativePath = pathname === "/" ? "index.html" : pathname.slice(1);
+      const absolutePath = path.resolve(root, relativePath);
+
+      if (!absolutePath.startsWith(root)) {
+        response.writeHead(403);
+        response.end("Forbidden");
+        return;
+      }
+
+      const fileStat = await stat(absolutePath);
+      const filePath = fileStat.isDirectory() ? path.join(absolutePath, "index.html") : absolutePath;
+      await stat(filePath);
+      const extension = path.extname(filePath);
+
+      response.writeHead(200, {
+        "Content-Type": contentTypes.get(extension) ?? "application/octet-stream"
+      });
+      createReadStream(filePath).pipe(response);
+    } catch {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+    }
+  });
+}
+
+function listenWithFallback(currentPort, attemptsLeft = 10) {
+  const server = createStaticServer();
+
+  server.on("error", (error) => {
+    if (error.code === "EADDRINUSE" && attemptsLeft > 0) {
+      console.log(`Port ${currentPort} is busy, trying ${currentPort + 1}...`);
+      listenWithFallback(currentPort + 1, attemptsLeft - 1);
+      return;
+    }
+
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+
+  server.listen(currentPort, host, () => {
+    console.log(`GemQuest MVP running at http://${host}:${currentPort}`);
+  });
+}
+
+listenWithFallback(port);
