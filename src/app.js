@@ -19,8 +19,15 @@ let completionSaved = false;
 let audioContext = null;
 let clearingCells = new Set();
 let animationTimer = null;
+let dragCell = null;
+let suppressClick = false;
 
 app.addEventListener("click", (event) => {
+  if (suppressClick) {
+    suppressClick = false;
+    return;
+  }
+
   const actionTarget = event.target.closest("[data-action]");
   if (actionTarget) {
     handleAction(actionTarget.dataset.action, actionTarget.dataset);
@@ -31,6 +38,64 @@ app.addEventListener("click", (event) => {
   if (cellTarget) {
     handleCellClick(Number(cellTarget.dataset.row), Number(cellTarget.dataset.col));
   }
+});
+
+app.addEventListener("pointerdown", (event) => {
+  const cellTarget = getCellTarget(event);
+  if (!cellTarget || cellTarget.disabled || !currentGame || currentGame.status !== "playing") {
+    return;
+  }
+
+  dragCell = {
+    row: Number(cellTarget.dataset.row),
+    col: Number(cellTarget.dataset.col)
+  };
+  cellTarget.classList.add("dragging");
+});
+
+app.addEventListener("pointerover", (event) => {
+  if (!dragCell) {
+    return;
+  }
+
+  app.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
+  const cellTarget = getCellTarget(event);
+  if (!cellTarget || cellTarget.disabled) {
+    return;
+  }
+
+  const hoverCell = {
+    row: Number(cellTarget.dataset.row),
+    col: Number(cellTarget.dataset.col)
+  };
+  if (areAdjacent(dragCell, hoverCell)) {
+    cellTarget.classList.add("drop-target");
+  }
+});
+
+app.addEventListener("pointerup", (event) => {
+  if (!dragCell) {
+    return;
+  }
+
+  const from = dragCell;
+  const cellTarget = getCellTarget(event);
+  const to = cellTarget
+    ? { row: Number(cellTarget.dataset.row), col: Number(cellTarget.dataset.col) }
+    : null;
+
+  clearDragClasses();
+  dragCell = null;
+
+  if (to && areAdjacent(from, to)) {
+    suppressClick = true;
+    performSwap(from, to);
+  }
+});
+
+app.addEventListener("pointercancel", () => {
+  dragCell = null;
+  clearDragClasses();
 });
 
 render();
@@ -138,7 +203,15 @@ function handleCellClick(row, col) {
     return;
   }
 
-  const result = currentGame.swap(selectedCell, nextSelection);
+  performSwap(selectedCell, nextSelection);
+}
+
+function performSwap(from, to) {
+  if (!currentGame || currentGame.status !== "playing") {
+    return;
+  }
+
+  const result = currentGame.swap(from, to);
   selectedCell = null;
 
   if (result.accepted) {
@@ -159,6 +232,16 @@ function handleCellClick(row, col) {
   }
 
   render();
+}
+
+function getCellTarget(event) {
+  return event.target.closest("[data-cell]");
+}
+
+function clearDragClasses() {
+  app
+    .querySelectorAll(".dragging, .drop-target")
+    .forEach((item) => item.classList.remove("dragging", "drop-target"));
 }
 
 function buildMoveMessage(result) {
@@ -297,7 +380,8 @@ function renderGame() {
   const progressData = getObjectiveProgress(currentGame);
   const progressPercent = Math.round((progressData.current / progressData.target) * 100);
   const bestScore = progress.bestScores[currentGame.level.id] ?? 0;
-  const resultBlock = currentGame.status === "playing" ? "" : renderResultBlock();
+  const resultBlock = currentGame.status === "lost" ? renderResultBlock() : "";
+  const victoryOverlay = currentGame.status === "won" ? renderVictoryOverlay() : "";
 
   app.innerHTML = `
     <section class="game-view">
@@ -351,6 +435,7 @@ function renderGame() {
           ${resultBlock}
         </aside>
       </section>
+      ${victoryOverlay}
     </section>
   `;
 }
@@ -392,14 +477,70 @@ function positionKey({ row, col }) {
   return `${row},${col}`;
 }
 
+function renderVictoryOverlay() {
+  const hasNext = currentGame.level.id < LEVELS.length;
+  const bestScore = progress.bestScores[currentGame.level.id] ?? currentGame.score;
+
+  return `
+    <section class="victory-overlay" aria-label="Victoria">
+      <div class="victory-confetti" aria-hidden="true">
+        ${Array.from({ length: 16 }, (_, index) => `<span style="--i: ${index}"></span>`).join("")}
+      </div>
+      <div class="victory-card">
+        <span class="victory-badge" aria-hidden="true">OK</span>
+        <p class="panel-label">Victoria</p>
+        <h2>Nivel ${currentGame.level.id} completado</h2>
+        <p class="result-copy">
+          ${hasNext ? "Nuevo nivel desbloqueado. Sigue la racha." : "Completaste todos los niveles disponibles."}
+        </p>
+        <div class="result-stats">
+          <span>
+            <small>Puntuacion</small>
+            <strong>${currentGame.score}</strong>
+          </span>
+          <span>
+            <small>Record</small>
+            <strong>${bestScore}</strong>
+          </span>
+        </div>
+        <div class="result-actions">
+          <button class="primary-button" data-action="${hasNext ? "next-level" : "retry"}">
+            ${hasNext ? "Siguiente nivel" : "Jugar otra vez"}
+          </button>
+          <button class="secondary-button" data-action="levels">Niveles</button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderResultBlock() {
   const won = currentGame.status === "won";
   const hasNext = currentGame.level.id < LEVELS.length;
+  const bestScore = progress.bestScores[currentGame.level.id] ?? currentGame.score;
+  const headline = won ? "Nivel completado" : "Intentalo otra vez";
+  const copy = won
+    ? hasNext
+      ? "Buen trabajo. El siguiente desafio ya esta desbloqueado."
+      : "Completaste todos los niveles disponibles."
+    : "Te quedaste sin movimientos. Ajusta tu estrategia y vuelve a probar.";
+
   return `
     <section class="result-panel ${won ? "won" : "lost"}">
+      <span class="result-badge" aria-hidden="true">${won ? "OK" : "!"}</span>
       <p class="panel-label">${won ? "Victoria" : "Derrota"}</p>
-      <h2>${won ? "Nivel superado" : "Intentalo otra vez"}</h2>
-      <p>Puntuacion final: ${currentGame.score}</p>
+      <h2>${headline}</h2>
+      <p class="result-copy">${copy}</p>
+      <div class="result-stats">
+        <span>
+          <small>Puntuacion</small>
+          <strong>${currentGame.score}</strong>
+        </span>
+        <span>
+          <small>Record</small>
+          <strong>${bestScore}</strong>
+        </span>
+      </div>
       <div class="result-actions">
         <button class="primary-button" data-action="${won && hasNext ? "next-level" : "retry"}">
           ${won && hasNext ? "Siguiente" : "Reintentar"}
