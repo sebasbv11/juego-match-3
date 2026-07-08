@@ -84,3 +84,9 @@ El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build`
 ## Persistencia
 
 El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido.
+
+## Bitacora de cambios
+
+| Fecha | Responsable | Cambios realizados |
+| --- | --- | --- |
+| 2026-07-08 | Sebastian | Se agregaron assets personalizados y uniformes para las gemas en `assets/gems/`. Se mejoro la interaccion del tablero con arrastre de gemas, resaltado de celda destino y efectos visuales durante el movimiento. Se incorporo una pantalla modal de victoria con animacion de entrada, fondo atenuado, resumen de puntuacion, record y confetti. Se actualizo la documentacion del proyecto y se agrego el archivo `Planificacion_Gestion_Agil_GemQuest.md`. |
