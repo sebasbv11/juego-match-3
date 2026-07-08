@@ -33,6 +33,7 @@ El MVP implementado corresponde a la opcion B: juego casual tipo Match-3. La sol
 | Deteccion de combinaciones 3+ | Implementado |
 | Eliminacion, cascadas, gravedad y recarga | Implementado |
 | Puntuacion y movimientos limitados | Implementado |
+| Descuento por intento adyacente | Implementado: todo intercambio adyacente consume 1 movimiento, aunque no coincida. |
 | Tres niveles con objetivos distintos | Implementado |
 | Persistencia de progreso | Implementado con `localStorage` |
 | Mejor puntuacion por nivel | Implementado con `localStorage` |
@@ -113,13 +114,13 @@ La priorizacion se realizo con **MoSCoW**:
 | ID | Criterios de aceptacion |
 | --- | --- |
 | HU-01 | El tablero se genera al iniciar una partida. No existen combinaciones iniciales automaticas. Todas las celdas del tablero contienen una gema visible. |
-| HU-02 | El jugador puede seleccionar dos gemas adyacentes. El intercambio solo se permite si las gemas estan una al lado de la otra. Si el movimiento no genera combinacion, las gemas regresan a su posicion original. |
-| HU-03 | El sistema identifica combinaciones horizontales y verticales de tres o mas gemas iguales. Las combinaciones se detectan despues de cada movimiento valido. |
+| HU-02 | El jugador puede seleccionar dos gemas adyacentes. El intercambio solo se permite si las gemas estan una al lado de la otra. Si el movimiento no genera combinacion, las gemas regresan a su posicion original y se descuenta 1 movimiento por el intento. |
+| HU-03 | El sistema identifica combinaciones horizontales y verticales de tres o mas gemas iguales. Las combinaciones se detectan despues de cada intercambio adyacente intentado. |
 | HU-04 | Las gemas combinadas desaparecen del tablero. El sistema actualiza el puntaje despues de eliminar una combinacion. No se eliminan gemas que no formen parte de una combinacion. |
 | HU-05 | Las gemas superiores caen para llenar los espacios vacios. La gravedad se aplica hasta que no queden huecos intermedios. El tablero mantiene su tamano original. |
 | HU-06 | Se generan nuevas gemas en los espacios vacios de la parte superior. Las nuevas gemas se integran al tablero despues de aplicar gravedad. El tablero queda completo al finalizar la jugada. |
 | HU-07 | El puntaje aumenta al eliminar combinaciones. Las combinaciones mas grandes otorgan mayor puntaje. El puntaje actual se muestra durante la partida. |
-| HU-08 | Cada movimiento valido reduce en uno el contador de movimientos. El contador se muestra en pantalla. Cuando llega a cero, el juego evalua si el nivel fue ganado o perdido. |
+| HU-08 | Cada intercambio adyacente intentado reduce en uno el contador de movimientos, aunque no genere combinacion. El contador se muestra en pantalla. Cuando llega a cero, el juego evalua si el nivel fue ganado o perdido. |
 | HU-09 | Cada nivel tiene un objetivo especifico. El juego valida automaticamente si el objetivo fue cumplido. Al cumplir el objetivo, se muestra la pantalla de victoria. |
 | HU-10 | La pantalla de inicio muestra el nombre del juego. Incluye un boton para comenzar. El boton lleva al flujo principal del juego. |
 | HU-11 | La pantalla de seleccion muestra los niveles disponibles. Los niveles bloqueados no pueden seleccionarse. El jugador puede iniciar un nivel desbloqueado. |
@@ -563,7 +564,8 @@ La logica del tablero esta separada de la interfaz en `src/gameLogic.js`. Esto p
 | --- | --- | --- |
 | Generacion valida | El tablero inicial se crea sin combinaciones automaticas. | HU-01 |
 | Adyacencia | Solo se pueden intercambiar gemas vecinas en horizontal o vertical. | HU-02 |
-| Reversion | Si el intercambio no forma combinacion, se revierte. | HU-02 |
+| Reversion | Si el intercambio no forma combinacion, se revierte para mantener el tablero estable. | HU-02 |
+| Descuento de intento | Todo intercambio adyacente consume 1 movimiento, incluso cuando no genera combinacion. | HU-08, HU-13 |
 | Deteccion | Se detectan grupos horizontales y verticales de 3 o mas gemas iguales. | HU-03 |
 | Eliminacion | Las gemas combinadas se eliminan del tablero y suman puntos. | HU-04, HU-07 |
 | Gravedad | Las gemas superiores caen para llenar espacios vacios. | HU-05 |
@@ -579,7 +581,8 @@ flowchart TD
   B -- No --> C["Movimiento rechazado"]
   B -- Si --> D["Intercambiar gemas"]
   D --> E{"Hay combinacion 3+?"}
-  E -- No --> F["Revertir intercambio"]
+  E -- No --> F["Revertir intercambio y consumir 1 movimiento"]
+  F --> P
   E -- Si --> G["Consumir 1 movimiento"]
   G --> H["Eliminar combinaciones"]
   H --> I["Sumar puntos y recolectar gemas"]
@@ -599,9 +602,9 @@ flowchart TD
 
 | Nivel | Nombre | Objetivo | Movimientos | Dificultad |
 | --- | --- | --- | --- | --- |
-| 1 | Brillo inicial | Lograr 700 puntos | 22 | Base |
-| 2 | Cosecha azul | Eliminar 18 gemas Zafiro | 24 | Media |
-| 3 | Ruinas bloqueadas | Romper 8 obstaculos | 28 | Alta |
+| 1 | Brillo inicial | Lograr 780 puntos | 18 | Base |
+| 2 | Cosecha azul | Eliminar 20 gemas Zafiro | 20 | Media |
+| 3 | Ruinas bloqueadas | Romper 8 obstaculos | 24 | Alta |
 
 ## 2.7 Trazabilidad entre historias y codigo
 
@@ -614,7 +617,7 @@ flowchart TD
 | HU-05 | `src/gameLogic.js` | `applyGravityAndRefill()` aplica gravedad por columna. |
 | HU-06 | `src/gameLogic.js` | `applyGravityAndRefill()` rellena espacios vacios. |
 | HU-07 | `src/gameLogic.js`, `src/app.js` | `resolveBoard()` calcula puntos y la HUD los muestra. |
-| HU-08 | `src/gameLogic.js`, `src/app.js` | `movesLeft` se reduce en movimientos validos y se muestra en pantalla. |
+| HU-08 | `src/gameLogic.js`, `src/app.js` | `movesLeft` se reduce en cada intercambio adyacente, incluso si no forma combinacion. |
 | HU-09 | `src/gameLogic.js` | `isObjectiveComplete()` evalua objetivos de puntaje, recoleccion y obstaculos. |
 | HU-10 | `src/app.js` | `renderHome()` muestra pantalla inicial. |
 | HU-11 | `src/app.js` | `renderLevels()` muestra niveles bloqueados/desbloqueados. |
@@ -656,3 +659,4 @@ El proyecto incluye un `Dockerfile` basico para ejecutar el MVP como aplicacion 
 | Modelo de dominio actualizado | Se ajusto el dominio a lo implementado: partida, nivel, objetivo, tablero, celda, gema, progreso y puntuacion. |
 | Maquina de estados | Se documento el flujo completo de seleccion, intercambio, cascadas, victoria y derrota. |
 | Trazabilidad | Se agrego una matriz HU -> archivo -> evidencia tecnica para conectar gestion agil con codigo. |
+| Mejora de reglas y experiencia | Se diferenciaron visualmente las fichas, se agrego animacion de eliminacion, se redujo el puntaje por combinacion, se ajustaron objetivos/movimientos y se descuenta movimiento en intercambios adyacentes sin combinacion. |

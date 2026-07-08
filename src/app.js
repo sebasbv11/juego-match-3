@@ -17,6 +17,8 @@ let selectedCell = null;
 let message = "";
 let completionSaved = false;
 let audioContext = null;
+let clearingCells = new Set();
+let animationTimer = null;
 
 app.addEventListener("click", (event) => {
   const actionTarget = event.target.closest("[data-action]");
@@ -38,6 +40,7 @@ function handleAction(action, data) {
     screen = "home";
     currentGame = null;
     selectedCell = null;
+    clearingCells = new Set();
     render();
   }
 
@@ -45,6 +48,7 @@ function handleAction(action, data) {
     screen = "levels";
     currentGame = null;
     selectedCell = null;
+    clearingCells = new Set();
     render();
   }
 
@@ -77,6 +81,7 @@ function handleAction(action, data) {
     screen = "levels";
     currentGame = null;
     selectedCell = null;
+    clearingCells = new Set();
     render();
   }
 }
@@ -90,6 +95,7 @@ function startLevel(levelId) {
   currentGame = createGame(level);
   screen = "game";
   selectedCell = null;
+  clearingCells = new Set();
   completionSaved = false;
   message = "Selecciona una gema y luego una adyacente.";
   render();
@@ -136,14 +142,20 @@ function handleCellClick(row, col) {
   selectedCell = null;
 
   if (result.accepted) {
+    clearingCells = new Set((result.clearedCells ?? []).map(positionKey));
     message = buildMoveMessage(result);
     playTone(result.cascades > 1 ? 560 : 420, 0.09);
     if (currentGame.status !== "playing") {
       completeLevel();
     }
+    scheduleClearAnimation();
   } else {
+    clearingCells = new Set();
     message = moveErrorMessage(result.reason);
     playTone(140, 0.1);
+    if (currentGame.status !== "playing") {
+      completeLevel();
+    }
   }
 
   render();
@@ -158,13 +170,27 @@ function buildMoveMessage(result) {
 
 function moveErrorMessage(reason) {
   const messages = {
-    "no-match": "Ese intercambio no forma una combinacion.",
+    "no-match": "Ese intercambio no forma una combinacion. Se descuenta 1 movimiento.",
     blocked: "No puedes mover un obstaculo.",
     "not-adjacent": "Solo puedes intercambiar gemas adyacentes.",
     "outside-board": "Seleccion fuera del tablero.",
     finished: "La partida ya termino."
   };
   return messages[reason] ?? "Movimiento no valido.";
+}
+
+function scheduleClearAnimation() {
+  if (animationTimer) {
+    clearTimeout(animationTimer);
+  }
+
+  animationTimer = setTimeout(() => {
+    clearingCells = new Set();
+    animationTimer = null;
+    if (screen === "game") {
+      render();
+    }
+  }, 520);
 }
 
 function completeLevel() {
@@ -335,6 +361,7 @@ function renderBoard() {
       row.map((cell, colIndex) => {
         const selected =
           selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex;
+        const clearing = clearingCells.has(positionKey({ row: rowIndex, col: colIndex }));
         const disabled = currentGame.status !== "playing" || cell.blocker;
         const label = cell.blocker
           ? `Obstaculo en fila ${rowIndex + 1}, columna ${colIndex + 1}`
@@ -342,7 +369,7 @@ function renderBoard() {
 
         return `
           <button
-            class="cell ${selected ? "selected" : ""} ${cell.blocker ? "blocker" : ""}"
+            class="cell ${selected ? "selected" : ""} ${clearing ? "clearing" : ""} ${cell.blocker ? "blocker" : ""}"
             data-cell
             data-row="${rowIndex}"
             data-col="${colIndex}"
@@ -352,13 +379,17 @@ function renderBoard() {
             ${
               cell.blocker
                 ? `<span class="blocker-mark">x</span>`
-                : `<span class="gem ${GEM_META[cell.gem].cssClass}" aria-hidden="true"></span>`
+                : `<span class="gem ${GEM_META[cell.gem].cssClass}" aria-hidden="true"></span>${clearing ? `<span class="match-burst" aria-hidden="true"></span>` : ""}`
             }
           </button>
         `;
       })
     )
     .join("");
+}
+
+function positionKey({ row, col }) {
+  return `${row},${col}`;
 }
 
 function renderResultBlock() {

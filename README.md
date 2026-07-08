@@ -8,15 +8,16 @@ GemQuest es un juego web tipo Match-3 construido como MVP para el Grupo B. El al
 - HU-07 a HU-09: puntuacion, movimientos limitados y objetivos por nivel.
 - HU-10 a HU-14: inicio, seleccion de nivel, victoria, derrota y persistencia de progreso.
 - HU-15: mejor puntuacion por nivel guardada en `localStorage`.
-- HU-16/HU-17: retroalimentacion visual y sonido basico generado en el navegador.
+- HU-16/HU-17: fichas con siluetas distintas, animacion al eliminar combinaciones y sonido basico generado en el navegador.
+- Regla actual: cada intercambio adyacente consume 1 movimiento, aunque no forme combinacion.
 
 ## Niveles
 
 | Nivel | Objetivo | Movimientos | Dificultad |
 | --- | --- | --- | --- |
-| 1 | Lograr 700 puntos | 22 | Base |
-| 2 | Eliminar 18 gemas Zafiro | 24 | Media |
-| 3 | Romper 8 obstaculos | 28 | Alta |
+| 1 | Lograr 780 puntos | 18 | Base |
+| 2 | Eliminar 20 gemas Zafiro | 20 | Media |
+| 3 | Romper 8 obstaculos | 24 | Alta |
 
 ## Ejecucion local
 

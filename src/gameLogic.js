@@ -15,8 +15,8 @@ export const LEVELS = [
     rows: 8,
     cols: 8,
     gemTypes: 5,
-    moves: 22,
-    objective: { type: "score", target: 700 }
+    moves: 18,
+    objective: { type: "score", target: 780 }
   },
   {
     id: 2,
@@ -25,8 +25,8 @@ export const LEVELS = [
     rows: 8,
     cols: 8,
     gemTypes: 6,
-    moves: 24,
-    objective: { type: "collect", gem: 2, target: 18 }
+    moves: 20,
+    objective: { type: "collect", gem: 2, target: 20 }
   },
   {
     id: 3,
@@ -35,7 +35,7 @@ export const LEVELS = [
     rows: 8,
     cols: 8,
     gemTypes: 6,
-    moves: 28,
+    moves: 24,
     objective: { type: "blockers", target: 8 },
     blockers: [
       { row: 2, col: 3 },
@@ -182,13 +182,22 @@ export function applyMove(game, from, to, rng = Math.random) {
 
   swapGems(game.board, from, to);
   const matches = findMatches(game.board);
+  game.movesLeft -= 1;
 
   if (matches.cells.length === 0) {
     swapGems(game.board, from, to);
-    return rejectMove(game, "no-match");
+    updateStatus(game);
+    const result = {
+      accepted: false,
+      consumesMove: true,
+      reason: "no-match",
+      status: game.status,
+      movesLeft: game.movesLeft
+    };
+    game.lastResult = result;
+    return result;
   }
 
-  game.movesLeft -= 1;
   const resolution = resolveBoard(game, rng, matches);
   updateStatus(game);
 
@@ -198,6 +207,7 @@ export function applyMove(game, from, to, rng = Math.random) {
     to,
     status: game.status,
     movesLeft: game.movesLeft,
+    matchedCells: resolution.clearedCells,
     ...resolution
   };
   game.lastResult = result;
@@ -223,6 +233,7 @@ export function resolveBoard(game, rng = Math.random, initialMatches = findMatch
   let points = 0;
   let blockersCleared = 0;
   const collected = {};
+  const clearedCellKeys = new Set();
 
   while (matches.cells.length > 0 && chain < 50) {
     chain += 1;
@@ -231,16 +242,17 @@ export function resolveBoard(game, rng = Math.random, initialMatches = findMatch
       const cell = game.board[cellPosition.row][cellPosition.col];
       if (!cell.blocker && cell.gem !== null) {
         collected[cell.gem] = (collected[cell.gem] ?? 0) + 1;
+        clearedCellKeys.add(positionKey(cellPosition));
         cell.gem = null;
       }
     }
 
     const removedThisChain = matches.cells.length;
     const longMatchBonus = matches.groups.reduce(
-      (total, group) => total + Math.max(0, group.length - 3) * 15,
+      (total, group) => total + Math.max(0, group.length - 3) * 8,
       0
     );
-    const pointsThisChain = removedThisChain * 10 * chain + longMatchBonus;
+    const pointsThisChain = removedThisChain * 6 * chain + longMatchBonus;
     removed += removedThisChain;
     points += pointsThisChain;
     game.score += pointsThisChain;
@@ -261,7 +273,8 @@ export function resolveBoard(game, rng = Math.random, initialMatches = findMatch
     points,
     cascades: chain,
     blockersCleared,
-    collected
+    collected,
+    clearedCells: Array.from(clearedCellKeys, parsePositionKey)
   };
 }
 

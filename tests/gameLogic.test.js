@@ -29,24 +29,43 @@ test("initial boards are complete and do not start with matches", () => {
   }
 });
 
-test("invalid adjacent swaps are reverted and do not consume moves", () => {
-  const game = createGame(1, seededRandom(7));
+test("adjacent swaps without matches are reverted but consume one move", () => {
+  const level = {
+    ...LEVELS[0],
+    rows: 3,
+    cols: 3,
+    moves: 1,
+    gemTypes: 4,
+    objective: { type: "score", target: 200 }
+  };
+  const game = createGame(level, seededRandom(7));
+  game.board = boardFromGems([
+    [0, 1, 2],
+    [1, 2, 3],
+    [2, 3, 0]
+  ]);
   const initialBoard = cloneBoard(game.board);
-  const initialMoves = game.movesLeft;
-  let invalidResult = null;
 
-  for (let row = 0; row < game.level.rows && !invalidResult; row += 1) {
-    for (let col = 0; col < game.level.cols - 1 && !invalidResult; col += 1) {
-      const result = game.swap({ row, col }, { row, col: col + 1 });
-      if (!result.accepted) {
-        invalidResult = result;
-      }
-    }
-  }
+  const result = game.swap({ row: 0, col: 0 }, { row: 0, col: 1 });
 
-  assert.ok(invalidResult);
-  assert.equal(game.movesLeft, initialMoves);
+  assert.equal(result.accepted, false);
+  assert.equal(result.consumesMove, true);
+  assert.equal(result.reason, "no-match");
+  assert.equal(game.movesLeft, 0);
+  assert.equal(game.status, "lost");
   assert.deepEqual(game.board, initialBoard);
+});
+
+test("non-adjacent selections do not consume moves", () => {
+  const game = createGame(1, seededRandom(13));
+  const initialMoves = game.movesLeft;
+
+  const result = game.swap({ row: 0, col: 0 }, { row: 2, col: 2 });
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.reason, "not-adjacent");
+  assert.equal(game.movesLeft, initialMoves);
+  assert.equal(game.status, "playing");
 });
 
 test("a valid swap scores points, consumes one move and can win a score objective", () => {
@@ -56,7 +75,7 @@ test("a valid swap scores points, consumes one move and can win a score objectiv
     cols: 3,
     moves: 5,
     gemTypes: 4,
-    objective: { type: "score", target: 30 }
+    objective: { type: "score", target: 18 }
   };
   const game = createGame(level, seededRandom(3));
   game.board = boardFromGems([
@@ -69,7 +88,7 @@ test("a valid swap scores points, consumes one move and can win a score objectiv
 
   assert.equal(result.accepted, true);
   assert.equal(game.movesLeft, 4);
-  assert.ok(game.score >= 30);
+  assert.ok(game.score >= 18);
   assert.equal(game.status, "won");
 });
 

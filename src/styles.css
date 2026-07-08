@@ -148,43 +148,82 @@ button {
 .gem {
   width: 72%;
   height: 72%;
+  position: relative;
   display: block;
-  clip-path: polygon(50% 0, 88% 22%, 74% 100%, 26% 100%, 12% 22%);
+  overflow: hidden;
+  clip-path: var(--gem-shape);
   background:
-    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.85) 0 12%, transparent 13%),
+    var(--gem-pattern),
     linear-gradient(145deg, var(--gem-top), var(--gem-bottom));
+  border-radius: var(--gem-radius, 0);
   box-shadow:
     inset -8px -10px 18px rgba(0, 0, 0, 0.16),
     inset 8px 8px 14px rgba(255, 255, 255, 0.22),
     0 7px 12px rgba(23, 32, 42, 0.2);
 }
 
+.gem::before,
+.gem::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.gem::before {
+  inset: 14% 18% auto auto;
+  width: 28%;
+  height: 28%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  filter: blur(0.5px);
+}
+
+.gem::after {
+  inset: 12%;
+  border: 2px solid rgba(255, 255, 255, 0.26);
+  clip-path: inherit;
+}
+
 .gem-red {
+  --gem-shape: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  --gem-pattern: linear-gradient(45deg, rgba(255, 255, 255, 0.42) 0 12%, transparent 13% 100%);
   --gem-top: #ff8a80;
   --gem-bottom: #d81b60;
 }
 
 .gem-green {
+  --gem-shape: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  --gem-pattern: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.24) 0 8px, transparent 8px 18px);
   --gem-top: #7ddc84;
   --gem-bottom: #15803d;
 }
 
 .gem-blue {
+  --gem-shape: circle(50% at 50% 50%);
+  --gem-pattern: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.86) 0 14%, transparent 15% 100%);
+  --gem-radius: 999px;
   --gem-top: #7dd3fc;
   --gem-bottom: #2563eb;
 }
 
 .gem-amber {
+  --gem-shape: polygon(50% 0, 62% 32%, 96% 35%, 69% 56%, 80% 91%, 50% 72%, 20% 91%, 31% 56%, 4% 35%, 38% 32%);
+  --gem-pattern: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.62) 0 12%, transparent 13% 100%);
   --gem-top: #fde047;
   --gem-bottom: #f59e0b;
 }
 
 .gem-violet {
+  --gem-shape: polygon(50% 0, 90% 18%, 78% 100%, 22% 100%, 10% 18%);
+  --gem-pattern: linear-gradient(135deg, transparent 0 38%, rgba(255, 255, 255, 0.38) 39% 48%, transparent 49% 100%);
   --gem-top: #c4b5fd;
   --gem-bottom: #7c3aed;
 }
 
 .gem-jade {
+  --gem-shape: polygon(16% 0, 84% 0, 100% 16%, 100% 84%, 84% 100%, 16% 100%, 0 84%, 0 16%);
+  --gem-pattern: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.26) 0 7px, transparent 7px 16px);
+  --gem-radius: 14%;
   --gem-top: #5eead4;
   --gem-bottom: #0f766e;
 }
@@ -298,6 +337,7 @@ button {
 .cell {
   min-width: 0;
   aspect-ratio: 1;
+  position: relative;
   display: grid;
   place-items: center;
   padding: 0;
@@ -314,6 +354,27 @@ button {
 .cell.selected {
   border-color: #111827;
   box-shadow: 0 0 0 3px rgba(15, 159, 143, 0.42);
+}
+
+.cell.clearing {
+  animation: cellMatchPulse 520ms ease;
+}
+
+.cell.clearing .gem {
+  animation: gemRemove 500ms ease both;
+}
+
+.match-burst {
+  position: absolute;
+  width: 82%;
+  height: 82%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 0 0 6px rgba(15, 159, 143, 0.25),
+    0 0 24px rgba(245, 158, 11, 0.62);
+  animation: burstRing 520ms ease-out both;
+  pointer-events: none;
 }
 
 .cell:disabled {
@@ -398,6 +459,56 @@ button {
 
 .result-panel p {
   margin: 0;
+}
+
+@keyframes gemRemove {
+  0% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+
+  42% {
+    transform: scale(1.18) rotate(8deg);
+    opacity: 1;
+    filter: saturate(1.35) brightness(1.18);
+  }
+
+  100% {
+    transform: scale(0.18) rotate(-18deg);
+    opacity: 0.2;
+    filter: saturate(1.4) brightness(1.28);
+  }
+}
+
+@keyframes burstRing {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes cellMatchPulse {
+  0% {
+    background: #f8fafc;
+  }
+
+  45% {
+    background: #fff7d6;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
+  }
+
+  100% {
+    background: #f8fafc;
+  }
 }
 
 @media (max-width: 860px) {
