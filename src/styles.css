@@ -1439,6 +1439,7 @@ button {
     opacity: 0;
     transform: translateY(14px) scale(0.98);
   }
+}
 
   100% {
     opacity: 1;
