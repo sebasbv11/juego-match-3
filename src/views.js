@@ -298,19 +298,21 @@ function renderInfoHelp(isOpen) {
               <button class="info-close" data-action="close-info" aria-label="Cerrar">x</button>
               <p class="panel-label">Guia rapida</p>
               <h2>Como jugar GemQuest</h2>
-              <ul>
+              <ul class="guide-steps">
                 <li>Intercambia gemas vecinas para formar lineas de 3 o mas.</li>
                 <li>Cada intento adyacente consume 1 movimiento, aunque no haga match.</li>
                 <li>Los combos aparecen cuando una jugada causa cascadas automaticas.</li>
                 <li>Las combinaciones de 4+ y las cascadas multiplican mejor tu puntaje.</li>
                 <li>En el nivel 3, rompe obstaculos haciendo matches junto a ellos.</li>
               </ul>
+              <p class="gem-score-title">Valor de gemas</p>
               <div class="gem-score-list">
                 ${GEM_META.map(
                   (gem) => `
                     <span>
                       <i class="gem ${gem.cssClass}" aria-hidden="true"></i>
-                      ${gem.name}: ${gem.points} pts
+                      <strong>${gem.name}</strong>
+                      <small>${gem.points} pts</small>
                     </span>
                   `
                 ).join("")}

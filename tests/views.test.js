@@ -55,5 +55,7 @@ test("game screens can render the quick info guide", () => {
   });
 
   assert.match(html, /Guia rapida/);
-  assert.match(html, /Jade: 12 pts/);
+  assert.match(html, /Valor de gemas/);
+  assert.match(html, /Jade/);
+  assert.match(html, /12 pts/);
 });
