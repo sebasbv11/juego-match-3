@@ -535,6 +535,30 @@ button {
   clip-path: polygon(16% 0, 84% 0, 100% 16%, 100% 84%, 84% 100%, 16% 100%, 0 84%, 0 16%);
 }
 
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.level-card > .star-rating {
+  min-height: 28px;
+}
+
+.star {
+  font-size: 1.15rem;
+  line-height: 1;
+  text-shadow: 0 2px 6px rgba(245, 158, 11, 0.24);
+}
+
+.star.filled {
+  color: #f59e0b;
+}
+
+.star.empty {
+  color: rgba(100, 116, 139, 0.32);
+}
+
 .footer-actions {
   justify-content: flex-start;
   margin-top: 30px;
@@ -547,7 +571,7 @@ button {
 
 .hud {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -577,6 +601,15 @@ button {
 
 .hud strong {
   font-size: 1.55rem;
+}
+
+.hud-stars {
+  display: flex;
+  align-items: center;
+}
+
+.hud-stars .star {
+  font-size: 1.05rem;
 }
 
 .play-layout {
@@ -712,6 +745,29 @@ button {
   border-radius: 6px;
 }
 
+.message.combo-message {
+  border-left-color: #f59e0b;
+  background: #fff7d6;
+  color: #7c2d12;
+  font-weight: 800;
+  animation: comboPop 260ms ease both;
+}
+
+.combo-banner {
+  margin: 0;
+  justify-self: start;
+  display: inline-grid;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f59e0b, #e11d48);
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(225, 29, 72, 0.2);
+  animation: comboPop 260ms ease both;
+}
+
 .result-panel {
   padding: 16px;
   border: 1px solid var(--line);
@@ -729,6 +785,23 @@ button {
 
 .result-panel p {
   margin: 0;
+}
+
+.result-stars {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.result-stars .star {
+  font-size: 1.35rem;
+}
+
+.result-best-stars {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 @keyframes gemRemove {
@@ -778,6 +851,18 @@ button {
 
   100% {
     background: #f8fafc;
+  }
+}
+
+@keyframes comboPop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

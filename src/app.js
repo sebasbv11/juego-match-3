@@ -1,5 +1,6 @@
 import { GEM_META, LEVELS, areAdjacent, createGame } from "./gameLogic.js";
 import { ensureBackgroundMusic, playTone, updateBackgroundMusic } from "./audio.js";
+import { calculateStars, mergeBestStars } from "./mastery.js";
 import { createDefaultProgress, loadProgress, saveProgress } from "./storage.js";
 import { renderGame, renderHome, renderLevels } from "./views.js";
 
@@ -13,6 +14,7 @@ let message = "";
 let completionSaved = false;
 let clearingCells = new Set();
 let animationTimer = null;
+let lastCombo = 0;
 
 app.addEventListener("click", (event) => {
   ensureBackgroundMusic(progress.sound);
@@ -87,6 +89,7 @@ function clearActiveGame() {
   currentGame = null;
   selectedCell = null;
   clearingCells = new Set();
+  lastCombo = 0;
 }
 
 function startLevel(levelId) {
@@ -100,6 +103,7 @@ function startLevel(levelId) {
   selectedCell = null;
   clearingCells = new Set();
   completionSaved = false;
+  lastCombo = 0;
   message = "Selecciona una gema y luego una adyacente.";
   render();
 }
@@ -150,14 +154,16 @@ function handleCellClick(row, col) {
 function applyMoveResult(result) {
   if (result.accepted) {
     clearingCells = new Set((result.clearedCells ?? []).map(positionKey));
+    lastCombo = result.cascades > 1 ? result.cascades : 0;
     message = buildMoveMessage(result);
-    playTone(progress.sound, result.cascades > 1 ? 560 : 420, 0.09);
+    playTone(progress.sound, result.cascades > 2 ? 680 : result.cascades > 1 ? 560 : 420, 0.09);
     finishIfNeeded();
     scheduleClearAnimation();
     return;
   }
 
   clearingCells = new Set();
+  lastCombo = 0;
   message = moveErrorMessage(result.reason);
   playTone(progress.sound, 140, 0.1);
   finishIfNeeded();
@@ -170,7 +176,7 @@ function finishIfNeeded() {
 }
 
 function buildMoveMessage(result) {
-  const cascadeText = result.cascades > 1 ? `, ${result.cascades} cascadas` : "";
+  const cascadeText = result.cascades > 1 ? `, Combo x${result.cascades}` : "";
   const blockerText =
     result.blockersCleared > 0 ? `, ${result.blockersCleared} obstaculo(s)` : "";
   return `+${result.points} puntos${cascadeText}${blockerText}.`;
@@ -212,10 +218,20 @@ function completeLevel() {
   progress.bestScores[levelId] = Math.max(previousBest, currentGame.score);
 
   if (currentGame.status === "won") {
+    const earnedStars = calculateStars({
+      level: currentGame.level,
+      score: currentGame.score,
+      movesLeft: currentGame.movesLeft,
+      won: true
+    });
+
+    currentGame.earnedStars = earnedStars;
+    progress.starsByLevel[levelId] = mergeBestStars(progress.starsByLevel[levelId], earnedStars);
     progress.unlockedLevel = Math.max(progress.unlockedLevel, Math.min(levelId + 1, LEVELS.length));
-    message = "Nivel completado.";
+    message = `Nivel completado. ${earnedStars} estrella(s).`;
     playTone(progress.sound, 720, 0.14);
   } else {
+    currentGame.earnedStars = 0;
     message = "Sin movimientos disponibles.";
     playTone(progress.sound, 100, 0.14);
   }
@@ -247,6 +263,7 @@ function renderGameScreen() {
     selectedCell,
     clearingCells,
     message,
+    lastCombo,
     progress
   });
 }

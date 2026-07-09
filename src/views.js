@@ -35,11 +35,12 @@ export function renderLevels(progress) {
   `;
 }
 
-export function renderGame({ currentGame, selectedCell, clearingCells, message, progress }) {
+export function renderGame({ currentGame, selectedCell, clearingCells, message, lastCombo, progress }) {
   const progressData = getObjectiveProgress(currentGame);
   const progressPercent = Math.round((progressData.current / progressData.target) * 100);
   const bestScore = progress.bestScores[currentGame.level.id] ?? 0;
-  const resultBlock = currentGame.status === "playing" ? "" : renderResultBlock(currentGame);
+  const bestStars = progress.starsByLevel[currentGame.level.id] ?? 0;
+  const resultBlock = currentGame.status === "playing" ? "" : renderResultBlock(currentGame, bestStars);
 
   return `
     <section class="game-view">
@@ -67,6 +68,10 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
           <span>Record</span>
           <strong>${bestScore}</strong>
         </div>
+        <div>
+          <span>Maestria</span>
+          <strong class="hud-stars">${renderStars(bestStars, "Mejor maestria")}</strong>
+        </div>
       </section>
 
       <section class="play-layout">
@@ -89,7 +94,8 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
             </div>
             <p class="progress-copy">${progressData.label}</p>
           </section>
-          <p class="message">${message}</p>
+          ${lastCombo > 1 ? `<p class="combo-banner">Combo x${lastCombo}</p>` : ""}
+          <p class="message ${lastCombo > 1 ? "combo-message" : ""}">${message}</p>
           ${resultBlock}
         </aside>
       </section>
@@ -100,6 +106,7 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
 function renderLevelButton(level, progress) {
   const locked = level.id > progress.unlockedLevel;
   const bestScore = progress.bestScores[level.id] ?? 0;
+  const stars = progress.starsByLevel[level.id] ?? 0;
   const objectiveType = level.objective.type;
   const stateClass = locked ? "locked" : "unlocked";
   return `
@@ -124,6 +131,7 @@ function renderLevelButton(level, progress) {
         <span>${level.moves} movimientos</span>
         <span>Record ${bestScore}</span>
       </span>
+      ${renderStars(stars, `Maestria nivel ${level.id}`)}
       ${locked ? `<span class="lock-label">Bloqueado</span>` : `<span class="ready-label">Disponible</span>`}
     </button>
   `;
@@ -163,13 +171,22 @@ function renderCell(currentGame, selectedCell, clearingCells, cell, rowIndex, co
   `;
 }
 
-function renderResultBlock(currentGame) {
+function renderResultBlock(currentGame, bestStars) {
   const won = currentGame.status === "won";
   const hasNext = currentGame.level.id < LEVELS.length;
+  const earnedStars = currentGame.earnedStars ?? 0;
   return `
     <section class="result-panel ${won ? "won" : "lost"}">
       <p class="panel-label">${won ? "Victoria" : "Derrota"}</p>
       <h2>${won ? "Nivel superado" : "Intentalo otra vez"}</h2>
+      ${
+        won
+          ? `<div class="result-stars">
+              ${renderStars(earnedStars, "Estrellas ganadas")}
+              <span class="result-best-stars">Mejor ${bestStars}</span>
+            </div>`
+          : ""
+      }
       <p>Puntuacion final: ${currentGame.score}</p>
       <div class="result-actions">
         <button class="primary-button" data-action="${won && hasNext ? "next-level" : "retry"}">
@@ -179,6 +196,15 @@ function renderResultBlock(currentGame) {
       </div>
     </section>
   `;
+}
+
+function renderStars(amount, label) {
+  const stars = Array.from({ length: 3 }, (_, index) => {
+    const filled = index < amount;
+    return `<span class="star ${filled ? "filled" : "empty"}" aria-hidden="true">${filled ? "&#9733;" : "&#9734;"}</span>`;
+  }).join("");
+
+  return `<span class="star-rating" aria-label="${label}: ${amount} de 3">${stars}</span>`;
 }
 
 function positionKey({ row, col }) {

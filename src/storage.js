@@ -9,20 +9,26 @@ export function loadProgress() {
       return createDefaultProgress();
     }
     const parsed = JSON.parse(raw);
-    return {
-      unlockedLevel: Math.min(Math.max(Number(parsed.unlockedLevel) || 1, 1), LEVELS.length),
-      bestScores: parsed.bestScores ?? {},
-      sound: parsed.sound !== false
-    };
+    return normalizeProgress(parsed);
   } catch {
     return createDefaultProgress();
   }
+}
+
+export function normalizeProgress(progress) {
+  return {
+    unlockedLevel: Math.min(Math.max(Number(progress?.unlockedLevel) || 1, 1), LEVELS.length),
+    bestScores: progress?.bestScores ?? {},
+    starsByLevel: progress?.starsByLevel ?? {},
+    sound: progress?.sound !== false
+  };
 }
 
 export function createDefaultProgress() {
   return {
     unlockedLevel: 1,
     bestScores: {},
+    starsByLevel: {},
     sound: true
   };
 }
