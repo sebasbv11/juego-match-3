@@ -1,10 +1,10 @@
 import { GEM_META, LEVELS, describeObjective, getObjectiveProgress } from "./gameLogic.js";
 
-export function renderHome() {
+export function renderHome({ infoOpen = false } = {}) {
   return `
     <section class="home-view">
       <div class="home-copy">
-        <p class="eyebrow">MVP Match-3</p>
+        <p class="eyebrow">Match-3</p>
         <h1>GemQuest</h1>
         <div class="home-actions">
           <button class="primary-button" data-action="start-latest">Jugar</button>
@@ -12,10 +12,11 @@ export function renderHome() {
         </div>
       </div>
     </section>
+    ${renderInfoHelp(infoOpen)}
   `;
 }
 
-export function renderLevels(progress) {
+export function renderLevels(progress, { infoOpen = false } = {}) {
   return `
     <section class="level-view">
       <header class="screen-header">
@@ -32,18 +33,22 @@ export function renderLevels(progress) {
         <button class="quiet-button" data-action="reset-progress">Reiniciar progreso</button>
       </div>
     </section>
+    ${renderInfoHelp(infoOpen)}
   `;
 }
 
-export function renderGame({ currentGame, selectedCell, clearingCells, message, lastCombo, progress }) {
+export function renderGame({ currentGame, selectedCell, clearingCells, message, lastCombo, progress, infoOpen = false }) {
   const progressData = getObjectiveProgress(currentGame);
   const progressPercent = Math.round((progressData.current / progressData.target) * 100);
   const bestScore = progress.bestScores[currentGame.level.id] ?? 0;
   const bestStars = progress.starsByLevel[currentGame.level.id] ?? 0;
-  const resultBlock = currentGame.status === "playing" ? "" : renderResultBlock(currentGame, bestStars);
+  const resultBlock =
+    currentGame.status === "lost" ? renderResultBlock(currentGame, bestStars) : "";
+  const victoryOverlay =
+    currentGame.status === "won" ? renderVictoryOverlay(currentGame, bestStars) : "";
 
   return `
-    <section class="game-view">
+    <section class="game-view game-status-${currentGame.status}">
       <header class="game-header">
         <button class="quiet-button" data-action="levels">Niveles</button>
         <div class="level-title">
@@ -99,7 +104,9 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
           ${resultBlock}
         </aside>
       </section>
+      ${victoryOverlay}
     </section>
+    ${renderInfoHelp(infoOpen)}
   `;
 }
 
@@ -198,6 +205,80 @@ function renderResultBlock(currentGame, bestStars) {
   `;
 }
 
+function renderVictoryOverlay(currentGame, bestStars) {
+  const earnedStars = currentGame.earnedStars ?? 0;
+  const hasNext = currentGame.level.id < LEVELS.length;
+  const nextLevel = currentGame.level.id + 1;
+  const previousBest = currentGame.previousBestScore ?? 0;
+  const coinsEarned = calculateCoinsEarned(currentGame);
+  const worldProgress = Math.round((currentGame.level.id / LEVELS.length) * 100);
+
+  return `
+    <section class="victory-overlay" aria-label="Victoria">
+      <div class="confetti" aria-hidden="true">
+        ${Array.from(
+          { length: 26 },
+          (_, index) => `<span style="--i: ${index}; --x: ${(index * 37) % 100}%;"></span>`
+        ).join("")}
+      </div>
+      <div class="victory-card">
+        <div class="victory-topbar" aria-hidden="true">
+          <span class="reward-pill coin-pill"><b></b>${coinsEarned}</span>
+          <span class="reward-pill star-pill"><b></b>${earnedStars}</span>
+        </div>
+        <div class="pirate-host" aria-hidden="true">
+          <span class="pirate-hat"></span>
+          <span class="pirate-face"></span>
+          <span class="pirate-coat"></span>
+        </div>
+        <div class="victory-content">
+          <h2>Nivel completado!</h2>
+          <div class="victory-star-stage" aria-hidden="true">
+            <span class="big-victory-star"></span>
+          </div>
+          <div class="victory-stars">
+            ${renderStars(earnedStars, "Estrellas ganadas")}
+          </div>
+          <div class="reward-summary">
+            <span>
+              <small>Monedas ganadas</small>
+              <strong>${coinsEarned}</strong>
+            </span>
+            <span>
+              <small>Puntaje obtenido</small>
+              <strong>${currentGame.score}</strong>
+            </span>
+          </div>
+          <div class="episode-progress">
+            <div>
+              <small>Progreso del episodio</small>
+              <strong>${worldProgress}%</strong>
+            </div>
+            <span><i style="width: ${worldProgress}%"></i></span>
+          </div>
+          ${
+            currentGame.isNewRecord
+              ? `<p class="new-record">Nuevo record del nivel</p>`
+              : `<p class="result-best-stars">Record anterior: ${previousBest} | Mejor maestria: ${bestStars} de 3</p>`
+          }
+          <div class="victory-actions">
+            <button class="primary-button victory-next" data-action="${hasNext ? "next-level" : "retry"}">
+              ${hasNext ? `Siguiente: nivel ${nextLevel}` : "Jugar otra vez"}
+            </button>
+            <button class="secondary-button" data-action="retry">Repetir nivel</button>
+            <button class="quiet-button" data-action="levels">Volver al mapa</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function calculateCoinsEarned(currentGame) {
+  const stars = currentGame.earnedStars ?? 0;
+  return Math.max(10, stars * 25 + Math.floor(currentGame.score / 100) + currentGame.movesLeft * 2);
+}
+
 function renderStars(amount, label) {
   const stars = Array.from({ length: 3 }, (_, index) => {
     const filled = index < amount;
@@ -205,6 +286,42 @@ function renderStars(amount, label) {
   }).join("");
 
   return `<span class="star-rating" aria-label="${label}: ${amount} de 3">${stars}</span>`;
+}
+
+function renderInfoHelp(isOpen) {
+  return `
+    <button class="info-button" data-action="open-info" aria-label="Como jugar">?</button>
+    ${
+      isOpen
+        ? `<section class="info-overlay" aria-label="Guia rapida">
+            <div class="info-panel">
+              <button class="info-close" data-action="close-info" aria-label="Cerrar">x</button>
+              <p class="panel-label">Guia rapida</p>
+              <h2>Como jugar GemQuest</h2>
+              <ul class="guide-steps">
+                <li>Intercambia gemas vecinas para formar lineas de 3 o mas.</li>
+                <li>Cada intento adyacente consume 1 movimiento, aunque no haga match.</li>
+                <li>Los combos aparecen cuando una jugada causa cascadas automaticas.</li>
+                <li>Las combinaciones de 4+ y las cascadas multiplican mejor tu puntaje.</li>
+                <li>En el nivel 3, rompe obstaculos haciendo matches junto a ellos.</li>
+              </ul>
+              <p class="gem-score-title">Valor de gemas</p>
+              <div class="gem-score-list">
+                ${GEM_META.map(
+                  (gem) => `
+                    <span>
+                      <i class="gem ${gem.cssClass}" aria-hidden="true"></i>
+                      <strong>${gem.name}</strong>
+                      <small>${gem.points} pts</small>
+                    </span>
+                  `
+                ).join("")}
+              </div>
+            </div>
+          </section>`
+        : ""
+    }
+  `;
 }
 
 function positionKey({ row, col }) {

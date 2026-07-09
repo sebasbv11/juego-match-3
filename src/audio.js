@@ -20,7 +20,7 @@ export function playTone(soundEnabled, frequency, duration) {
     oscillator.start();
     oscillator.stop(audioContext.currentTime + duration);
   } catch {
-    // Audio is optional for the MVP and can be blocked by browser settings.
+    // Audio can be blocked by browser settings.
   }
 }
 

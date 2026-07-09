@@ -1,10 +1,10 @@
 export const GEM_META = [
-  { id: 0, name: "Rubi", cssClass: "gem-red" },
-  { id: 1, name: "Esmeralda", cssClass: "gem-green" },
-  { id: 2, name: "Zafiro", cssClass: "gem-blue" },
-  { id: 3, name: "Ambar", cssClass: "gem-amber" },
-  { id: 4, name: "Amatista", cssClass: "gem-violet" },
-  { id: 5, name: "Jade", cssClass: "gem-jade" }
+  { id: 0, name: "Rubi", cssClass: "gem-red", points: 6 },
+  { id: 1, name: "Esmeralda", cssClass: "gem-green", points: 7 },
+  { id: 2, name: "Zafiro", cssClass: "gem-blue", points: 8 },
+  { id: 3, name: "Ambar", cssClass: "gem-amber", points: 9 },
+  { id: 4, name: "Amatista", cssClass: "gem-violet", points: 10 },
+  { id: 5, name: "Jade", cssClass: "gem-jade", points: 12 }
 ];
 
 export const LEVELS = [
@@ -238,6 +238,11 @@ export function resolveBoard(game, rng = Math.random, initialMatches = findMatch
   while (matches.cells.length > 0 && chain < 50) {
     chain += 1;
 
+    const gemPoints = matches.cells.reduce(
+      (total, cellPosition) => total + (GEM_META[game.board[cellPosition.row][cellPosition.col].gem]?.points ?? 0),
+      0
+    );
+
     for (const cellPosition of matches.cells) {
       const cell = game.board[cellPosition.row][cellPosition.col];
       if (!cell.blocker && cell.gem !== null) {
@@ -252,7 +257,7 @@ export function resolveBoard(game, rng = Math.random, initialMatches = findMatch
       (total, group) => total + Math.max(0, group.length - 3) * 8,
       0
     );
-    const pointsThisChain = removedThisChain * 6 * chain + longMatchBonus;
+    const pointsThisChain = gemPoints * chain + longMatchBonus;
     removed += removedThisChain;
     points += pointsThisChain;
     game.score += pointsThisChain;

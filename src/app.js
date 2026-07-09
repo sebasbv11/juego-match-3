@@ -15,8 +15,16 @@ let completionSaved = false;
 let clearingCells = new Set();
 let animationTimer = null;
 let lastCombo = 0;
+let dragCell = null;
+let suppressClick = false;
+let infoOpen = false;
 
 app.addEventListener("click", (event) => {
+  if (suppressClick) {
+    suppressClick = false;
+    return;
+  }
+
   ensureBackgroundMusic(progress.sound);
 
   const actionTarget = event.target.closest("[data-action]");
@@ -29,6 +37,64 @@ app.addEventListener("click", (event) => {
   if (cellTarget) {
     handleCellClick(Number(cellTarget.dataset.row), Number(cellTarget.dataset.col));
   }
+});
+
+app.addEventListener("pointerdown", (event) => {
+  const cellTarget = getCellTarget(event);
+  if (!cellTarget || cellTarget.disabled || !currentGame || currentGame.status !== "playing") {
+    return;
+  }
+
+  dragCell = {
+    row: Number(cellTarget.dataset.row),
+    col: Number(cellTarget.dataset.col)
+  };
+  cellTarget.classList.add("dragging");
+});
+
+app.addEventListener("pointerover", (event) => {
+  if (!dragCell) {
+    return;
+  }
+
+  app.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
+  const cellTarget = getCellTarget(event);
+  if (!cellTarget || cellTarget.disabled) {
+    return;
+  }
+
+  const hoverCell = {
+    row: Number(cellTarget.dataset.row),
+    col: Number(cellTarget.dataset.col)
+  };
+  if (areAdjacent(dragCell, hoverCell)) {
+    cellTarget.classList.add("drop-target");
+  }
+});
+
+app.addEventListener("pointerup", (event) => {
+  if (!dragCell) {
+    return;
+  }
+
+  const from = dragCell;
+  const cellTarget = getCellTarget(event);
+  const to = cellTarget
+    ? { row: Number(cellTarget.dataset.row), col: Number(cellTarget.dataset.col) }
+    : null;
+
+  clearDragClasses();
+  dragCell = null;
+
+  if (to && areAdjacent(from, to)) {
+    suppressClick = true;
+    performSwap(from, to);
+  }
+});
+
+app.addEventListener("pointercancel", () => {
+  dragCell = null;
+  clearDragClasses();
 });
 
 render();
@@ -70,6 +136,16 @@ function handleAction(action, data) {
     progress = createDefaultProgress();
     saveProgress(progress);
     showLevels();
+  }
+
+  if (action === "open-info") {
+    infoOpen = true;
+    render();
+  }
+
+  if (action === "close-info") {
+    infoOpen = false;
+    render();
   }
 }
 
@@ -145,7 +221,15 @@ function handleCellClick(row, col) {
     return;
   }
 
-  const result = currentGame.swap(selectedCell, nextSelection);
+  performSwap(selectedCell, nextSelection);
+}
+
+function performSwap(from, to) {
+  if (!currentGame || currentGame.status !== "playing") {
+    return;
+  }
+
+  const result = currentGame.swap(from, to);
   selectedCell = null;
   applyMoveResult(result);
   render();
@@ -215,6 +299,8 @@ function completeLevel() {
   completionSaved = true;
   const levelId = currentGame.level.id;
   const previousBest = progress.bestScores[levelId] ?? 0;
+  currentGame.previousBestScore = previousBest;
+  currentGame.isNewRecord = currentGame.score > previousBest;
   progress.bestScores[levelId] = Math.max(previousBest, currentGame.score);
 
   if (currentGame.status === "won") {
@@ -241,10 +327,10 @@ function completeLevel() {
 
 function render() {
   if (screen === "home") {
-    app.innerHTML = renderHome();
+    app.innerHTML = renderHome({ infoOpen });
   }
   if (screen === "levels") {
-    app.innerHTML = renderLevels(progress);
+    app.innerHTML = renderLevels(progress, { infoOpen });
   }
   if (screen === "game") {
     renderGameScreen();
@@ -264,10 +350,21 @@ function renderGameScreen() {
     clearingCells,
     message,
     lastCombo,
-    progress
+    progress,
+    infoOpen
   });
 }
 
 function positionKey({ row, col }) {
   return `${row},${col}`;
+}
+
+function getCellTarget(event) {
+  return event.target.closest("[data-cell]");
+}
+
+function clearDragClasses() {
+  app.querySelectorAll(".dragging, .drop-target").forEach((item) => {
+    item.classList.remove("dragging", "drop-target");
+  });
 }
