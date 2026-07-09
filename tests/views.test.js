@@ -1,0 +1,59 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { createGame } from "../src/gameLogic.js";
+import { renderGame } from "../src/views.js";
+
+test("won games render the animated victory overlay", () => {
+  const currentGame = createGame(1);
+  currentGame.status = "won";
+  currentGame.score = 900;
+  currentGame.earnedStars = 2;
+  currentGame.movesLeft = 4;
+  currentGame.previousBestScore = 700;
+  currentGame.isNewRecord = true;
+
+  const html = renderGame({
+    currentGame,
+    selectedCell: null,
+    clearingCells: new Set(),
+    message: "Nivel completado.",
+    lastCombo: 0,
+    progress: {
+      bestScores: { 1: 900 },
+      starsByLevel: { 1: 2 },
+      sound: true
+    }
+  });
+
+  assert.match(html, /victory-overlay/);
+  assert.match(html, /confetti/);
+  assert.match(html, /Nivel completado/);
+  assert.match(html, /Monedas ganadas/);
+  assert.match(html, /Puntaje obtenido/);
+  assert.match(html, /Progreso del episodio/);
+  assert.match(html, /Nuevo record/);
+  assert.match(html, /Siguiente: nivel 2/);
+  assert.match(html, /Repetir nivel/);
+  assert.match(html, /Volver al mapa/);
+});
+
+test("game screens can render the quick info guide", () => {
+  const currentGame = createGame(1);
+
+  const html = renderGame({
+    currentGame,
+    selectedCell: null,
+    clearingCells: new Set(),
+    message: "Selecciona una gema.",
+    lastCombo: 0,
+    progress: {
+      bestScores: {},
+      starsByLevel: {},
+      sound: true
+    },
+    infoOpen: true
+  });
+
+  assert.match(html, /Guia rapida/);
+  assert.match(html, /Jade: 12 pts/);
+});

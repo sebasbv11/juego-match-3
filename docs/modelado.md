@@ -37,8 +37,12 @@ El MVP implementado corresponde a la opcion B: juego casual tipo Match-3. La sol
 | Tres niveles con objetivos distintos | Implementado |
 | Persistencia de progreso | Implementado con `localStorage` |
 | Mejor puntuacion por nivel | Implementado con `localStorage` |
+| Estrellas de maestria por nivel | Implementado con `localStorage` |
 | Pantallas de inicio, niveles y resultado | Implementadas |
-| Retroalimentacion visual y sonido | Implementacion basica |
+| Menu visual | Implementado con imagen de fondo generada y pantalla completa |
+| Tarjetas dinamicas de niveles | Implementadas con estados, gradientes y emblemas CSS |
+| Retroalimentacion visual y sonido | Implementado con animaciones, combos, tonos y musica en loop |
+| Arquitectura modular de frontend | Implementada con modulos de aplicacion, vistas, sonido, persistencia, maestria y logica |
 | Pruebas automatizadas | Implementadas con `node --test` |
 | CI/CD | Pipeline basico en GitHub Actions |
 | Contenedorizacion | `Dockerfile` incluido |
@@ -71,6 +75,8 @@ El MVP incluye:
 - Sistema de gravedad y generacion de nuevas fichas.
 - Tres niveles con objetivos definidos.
 - Sistema de puntuacion y movimientos limitados.
+- Sistema de maestria con 1 a 3 estrellas por nivel.
+- Retroalimentacion de combos/cascadas.
 - Persistencia basica del progreso.
 - Interfaz clara para iniciar, jugar, ganar o perder una partida.
 
@@ -95,8 +101,9 @@ El Product Backlog contiene las historias de usuario priorizadas para construir 
 | HU-13 | Pantalla de derrota | EP-04 Interfaz de usuario | Como jugador, quiero ver una pantalla de derrota cuando se terminen mis movimientos sin cumplir el objetivo. | Should | XS | Implementado |
 | HU-14 | Guardar progreso | EP-05 Persistencia | Como jugador, quiero guardar mi progreso para continuar desde el ultimo nivel desbloqueado. | Should | M | Implementado |
 | HU-15 | Guardar record | EP-05 Persistencia | Como jugador, quiero guardar mi mejor puntuacion para intentar superar mi record. | Could | S | Implementado |
-| HU-16 | Animaciones | EP-06 Experiencia de usuario | Como jugador, quiero animaciones al eliminar y caer gemas para que el juego se sienta mas dinamico. | Could | M | Basico |
+| HU-16 | Animaciones | EP-06 Experiencia de usuario | Como jugador, quiero animaciones al eliminar y caer gemas para que el juego se sienta mas dinamico. | Could | M | Implementado |
 | HU-17 | Sonidos | EP-06 Experiencia de usuario | Como jugador, quiero efectos de sonido para recibir retroalimentacion durante la partida. | Could | S | Implementado |
+| HU-18 | Maestria por estrellas y combos | EP-03 Sistema de niveles | Como jugador, quiero recibir estrellas y ver combos para medir mi dominio del nivel y motivarme a repetirlo. | Could | M | Implementado |
 
 ### Estimacion y priorizacion
 
@@ -128,8 +135,9 @@ La priorizacion se realizo con **MoSCoW**:
 | HU-13 | La pantalla de derrota aparece cuando se agotan los movimientos sin cumplir el objetivo. Permite reintentar el nivel. |
 | HU-14 | El progreso se guarda al completar un nivel. Al volver al juego se conserva el ultimo nivel desbloqueado. El guardado funciona aunque se cierre el navegador. |
 | HU-15 | El sistema guarda la mejor puntuacion obtenida. Si el jugador supera su record, el valor anterior se actualiza. El record se muestra en la interfaz. |
-| HU-16 | Las gemas tienen animacion al desaparecer. La caida de nuevas gemas se visualiza de forma fluida. Las animaciones no impiden jugar correctamente. |
-| HU-17 | El juego reproduce sonidos en acciones importantes. Los sonidos no se superponen de forma molesta. El jugador puede jugar aunque el sonido no este disponible. |
+| HU-16 | Las gemas tienen animacion al desaparecer. La seleccion, eliminacion, tarjetas de nivel, mensajes de combo y resultados entregan retroalimentacion visual sin impedir jugar correctamente. |
+| HU-17 | El juego reproduce sonidos en acciones importantes y musica de fondo en loop. Los sonidos no se superponen de forma molesta. El jugador puede activar o desactivar sonido. |
+| HU-18 | Al ganar un nivel se calculan de 1 a 3 estrellas. El mejor resultado de estrellas por nivel se guarda. Las cascadas muestran mensajes de combo como `Combo x2` o `Combo x3`. |
 
 ## 1.5 Priorizacion MoSCoW
 
@@ -137,7 +145,7 @@ La priorizacion se realizo con **MoSCoW**:
 | --- | --- | --- |
 | Must Have | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06, HU-07, HU-08, HU-09 | Son necesarias para que el juego sea funcional y el MVP pueda completarse. |
 | Should Have | HU-10, HU-11, HU-12, HU-13, HU-14 | Mejoran el flujo de usuario y permiten una experiencia completa, aunque la mecanica principal puede existir sin ellas. |
-| Could Have | HU-15, HU-16, HU-17 | Aportan valor adicional y mejor experiencia, pero no son indispensables para la entrega inicial. |
+| Could Have | HU-15, HU-16, HU-17, HU-18 | Aportan valor adicional, rejugabilidad y mejor experiencia, pero no son indispensables para la entrega inicial. |
 | Won't Have | Tienda, sistema de vidas, ranking online, inicio de sesion | Se excluyen para mantener el alcance del MVP dentro del tiempo disponible. |
 
 ## 1.6 Planificacion de sprints
@@ -174,8 +182,9 @@ La priorizacion se realizo con **MoSCoW**:
 | HU-13 | Crear pantalla de derrota. | Terminado | Terminado |
 | HU-14 | Guardar progreso del jugador. | Terminado | Terminado |
 | HU-15 | Guardar mejor puntuacion. | Pendiente o en progreso | Terminado |
-| HU-16 | Agregar animaciones. | Pendiente o en progreso | Basico |
+| HU-16 | Agregar animaciones. | Pendiente o en progreso | Terminado |
 | HU-17 | Agregar sonidos. | Pendiente o en progreso | Terminado |
+| HU-18 | Agregar estrellas de maestria y feedback de combos. | No contemplado en documento base | Terminado |
 
 ## 1.7 Ceremonias Scrum documentadas
 
@@ -196,6 +205,17 @@ La priorizacion se realizo con **MoSCoW**:
 | Daily Scrum | Se dio seguimiento al avance de interfaz, reglas de niveles y guardado de progreso. | Se detecto que los objetivos por nivel requerian mayor esfuerzo del estimado inicialmente. |
 | Sprint Review | Se presento el MVP con niveles, puntaje, movimientos, pantallas de resultado y guardado basico. | Se recibio retroalimentacion sobre mejorar la claridad de los objetivos por nivel. |
 | Sprint Retrospective | Se reviso el cumplimiento del MVP y el manejo del cambio de requisito. | Se concluyo que la reestimacion permitio mantener controlado el alcance del sprint. |
+
+### Mejora posterior al MVP funcional
+
+Despues de estabilizar el MVP, se aplicaron mejoras incrementales orientadas a experiencia y mantenibilidad:
+
+- Menu principal con imagen generada y uso a pantalla completa.
+- Audio de fondo en loop con control desde la preferencia de sonido.
+- Pantalla de niveles redisenada con tarjetas dinamicas, estados y feedback visual.
+- Refactor de frontend en modulos: `app.js`, `views.js`, `audio.js`, `storage.js` y `mastery.js`.
+- Sistema de estrellas de maestria y feedback de combos por cascadas.
+- Ampliacion de pruebas automatizadas para maestria y compatibilidad de progreso guardado.
 
 ## 1.8 Tablero de gestion en Trello
 
@@ -238,6 +258,15 @@ Crear un tablero llamado **GemQuest - Gestion Agil** con las siguientes listas:
 - HU-15 Guardar record
 - HU-16 Animaciones
 - HU-17 Sonidos
+- HU-18 Maestria por estrellas y combos
+
+Si se actualiza el tablero despues del MVP, se recomienda agregar tambien tarjetas tecnicas de mejora:
+
+- Refactor frontend modular.
+- Rediseno visual de menu y seleccion de niveles.
+- Audio de fondo en loop.
+- Persistencia de estrellas por nivel.
+- Pruebas de maestria y compatibilidad de progreso.
 
 ### Informacion dentro de cada tarjeta
 
@@ -363,6 +392,7 @@ El Story Mapping organiza las funcionalidades siguiendo el recorrido del jugador
 | Finalizar partida | HU-12 Pantalla de victoria, HU-13 Pantalla de derrota |
 | Guardar progreso | HU-14 Guardar progreso, HU-15 Guardar record |
 | Mejorar experiencia | HU-16 Animaciones, HU-17 Sonidos |
+| Rejugar y dominar niveles | HU-18 Maestria por estrellas y combos |
 
 ## 2.2 Arquitectura del sistema con modelo C4
 
@@ -382,7 +412,7 @@ title Diagrama de Contexto C4 - GemQuest
 
 Person(jugador, "Jugador", "Persona que juega niveles Match-3, acumula puntos y desbloquea progreso.")
 System(gemquest, "GemQuest", "Juego web Match-3 con tablero, niveles, puntuacion, movimientos limitados y persistencia local.")
-System_Ext(localStorage, "LocalStorage del navegador", "Almacenamiento local usado para progreso, records y preferencia de sonido.")
+System_Ext(localStorage, "LocalStorage del navegador", "Almacenamiento local usado para progreso, records, estrellas de maestria y preferencia de sonido.")
 
 Rel(jugador, gemquest, "Juega, selecciona niveles e intercambia gemas", "Navegador web")
 Rel(gemquest, localStorage, "Guarda y consulta progreso del jugador", "API Web Storage")
@@ -398,9 +428,9 @@ Person(jugador, "Jugador", "Usuario final del juego.")
 
 System_Boundary(gemquest, "GemQuest") {
   Container(staticServer, "Servidor estatico", "Node.js / hosting estatico", "Entrega index.html, CSS y modulos JavaScript.")
-  Container(webApp, "Aplicacion web", "HTML, CSS, JavaScript", "Renderiza pantallas, tablero, HUD, seleccion de nivel y resultados.")
+  Container(webApp, "Aplicacion web", "HTML, CSS, JavaScript", "Renderiza pantallas, tablero, HUD, seleccion de nivel, resultados, estrellas y feedback de combos.")
   Container(gameLogic, "Modulo de logica del juego", "JavaScript ES Modules", "Genera tablero, valida intercambios, detecta combinaciones, resuelve cascadas, calcula puntaje y evalua objetivos.")
-  ContainerDb(storage, "LocalStorage", "Web Storage API", "Persistencia de nivel desbloqueado, mejores puntuaciones y preferencia de sonido.")
+  ContainerDb(storage, "LocalStorage", "Web Storage API", "Persistencia de nivel desbloqueado, mejores puntuaciones, estrellas de maestria y preferencia de sonido.")
 }
 
 Rel(jugador, staticServer, "Abre la aplicacion", "HTTP")
@@ -420,27 +450,35 @@ flowchart LR
   subgraph UI["Capa de presentacion"]
     HTML["index.html"]
     CSS["styles.css"]
-    App["app.js"]
+    App["app.js - coordinacion de estado"]
+    Views["views.js - renderizado"]
   end
 
   subgraph Domain["Logica de dominio"]
     Logic["gameLogic.js"]
+    Mastery["mastery.js"]
     Levels["Definicion de niveles"]
     Rules["Reglas Match-3"]
   end
 
-  subgraph Browser["Navegador"]
+  subgraph Services["Servicios del navegador"]
+    StorageModule["storage.js"]
+    AudioModule["audio.js"]
     Storage["localStorage"]
-    Audio["Web Audio API"]
+    Audio["Web Audio API / HTMLAudioElement"]
   end
 
   HTML --> App
-  CSS --> App
+  CSS --> Views
+  App --> Views
   App --> Logic
+  App --> Mastery
   Logic --> Levels
   Logic --> Rules
-  App --> Storage
-  App --> Audio
+  App --> StorageModule
+  App --> AudioModule
+  StorageModule --> Storage
+  AudioModule --> Audio
 ```
 
 ## 2.3 Modelo de Dominio
@@ -457,6 +495,7 @@ classDiagram
   class ProgresoJugador {
     +nivelDesbloqueado: int
     +records: Map
+    +estrellasPorNivel: Map
     +sonidoActivo: boolean
     +guardar()
     +cargar()
@@ -512,12 +551,18 @@ classDiagram
     +aplicarBonusCascada()
   }
 
+  class SistemaMaestria {
+    +calcularEstrellas()
+    +conservarMejorResultado()
+  }
+
   Jugador "1" --> "1" ProgresoJugador : conserva
   Jugador "1" --> "0..*" Partida : juega
   Partida "1" --> "1" Nivel : usa
   Partida "1" --> "1" Tablero : contiene
   Partida "1" --> "1" ObjetivoNivel : evalua
   Partida "1" --> "1" SistemaPuntuacion : calcula
+  Partida "1" --> "1" SistemaMaestria : evalua dominio
   Tablero "1" --> "64" Celda : formado por
   Celda "1" --> "0..1" Gema : contiene
   Nivel "1" --> "1" ObjetivoNivel : define
@@ -546,10 +591,11 @@ stateDiagram-v2
   RecargandoTablero --> ResolviendoCombinaciones: nueva cascada
   RecargandoTablero --> EvaluandoObjetivo: tablero estable
 
-  EvaluandoObjetivo --> Victoria: objetivo cumplido
+  EvaluandoObjetivo --> CalculandoMaestria: objetivo cumplido
   EvaluandoObjetivo --> Derrota: movimientos agotados
   EvaluandoObjetivo --> Jugando: quedan movimientos
 
+  CalculandoMaestria --> Victoria: asignar estrellas y guardar progreso
   Victoria --> SeleccionNivel: continuar
   Derrota --> PreparandoPartida: reintentar
 ```
@@ -572,6 +618,8 @@ La logica del tablero esta separada de la interfaz en `src/gameLogic.js`. Esto p
 | Recarga | Se generan nuevas gemas en los espacios superiores. | HU-06 |
 | Cascadas | Si despues de rellenar aparecen nuevas combinaciones, se resuelven automaticamente. | HU-03, HU-04, HU-05, HU-06 |
 | Obstaculos | Las combinaciones adyacentes rompen obstaculos del nivel 3. | HU-09 |
+| Combos | Cuando una jugada genera mas de una cascada, se muestra feedback `Combo xN` y se refuerza el sonido. | HU-16, HU-17, HU-18 |
+| Maestria | Al ganar se calculan de 1 a 3 estrellas segun puntuacion y movimientos restantes. | HU-18 |
 
 ### Flujo de resolucion de una jugada
 
@@ -606,6 +654,19 @@ flowchart TD
 | 2 | Cosecha azul | Eliminar 20 gemas Zafiro | 20 | Media |
 | 3 | Ruinas bloqueadas | Romper 8 obstaculos | 24 | Alta |
 
+### Sistema de maestria por estrellas
+
+El sistema de maestria no bloquea el avance del jugador; funciona como motivacion para repetir niveles y mejorar resultados.
+
+| Estrellas | Condicion general |
+| --- | --- |
+| 0 | El jugador pierde el nivel. |
+| 1 | El jugador gana el nivel. |
+| 2 | El jugador gana y supera aproximadamente el 125% del objetivo base de maestria. |
+| 3 | El jugador gana y supera aproximadamente el 150% del objetivo base, o logra buen puntaje conservando al menos 25% de movimientos. |
+
+Para niveles de recoleccion y obstaculos, `src/mastery.js` convierte el objetivo a una meta de puntuacion de maestria proporcional para mantener un criterio comun entre tipos de nivel.
+
 ## 2.7 Trazabilidad entre historias y codigo
 
 | Historia | Archivo principal | Evidencia tecnica |
@@ -616,17 +677,18 @@ flowchart TD
 | HU-04 | `src/gameLogic.js` | `resolveBoard()` elimina gemas detectadas. |
 | HU-05 | `src/gameLogic.js` | `applyGravityAndRefill()` aplica gravedad por columna. |
 | HU-06 | `src/gameLogic.js` | `applyGravityAndRefill()` rellena espacios vacios. |
-| HU-07 | `src/gameLogic.js`, `src/app.js` | `resolveBoard()` calcula puntos y la HUD los muestra. |
+| HU-07 | `src/gameLogic.js`, `src/views.js` | `resolveBoard()` calcula puntos y la HUD los muestra. |
 | HU-08 | `src/gameLogic.js`, `src/app.js` | `movesLeft` se reduce en cada intercambio adyacente, incluso si no forma combinacion. |
 | HU-09 | `src/gameLogic.js` | `isObjectiveComplete()` evalua objetivos de puntaje, recoleccion y obstaculos. |
-| HU-10 | `src/app.js` | `renderHome()` muestra pantalla inicial. |
-| HU-11 | `src/app.js` | `renderLevels()` muestra niveles bloqueados/desbloqueados. |
-| HU-12 | `src/app.js` | `renderResultBlock()` muestra victoria. |
-| HU-13 | `src/app.js` | `renderResultBlock()` muestra derrota. |
-| HU-14 | `src/app.js` | `loadProgress()` y `saveProgress()` guardan progreso. |
-| HU-15 | `src/app.js` | `bestScores` guarda el record por nivel. |
+| HU-10 | `src/views.js` | `renderHome()` muestra pantalla inicial con arte de fondo definido en CSS. |
+| HU-11 | `src/views.js`, `src/styles.css` | `renderLevels()` muestra niveles bloqueados/desbloqueados con tarjetas dinamicas. |
+| HU-12 | `src/views.js` | `renderResultBlock()` muestra victoria, puntuacion y estrellas ganadas. |
+| HU-13 | `src/views.js` | `renderResultBlock()` muestra derrota. |
+| HU-14 | `src/storage.js` | `loadProgress()`, `normalizeProgress()` y `saveProgress()` guardan progreso compatible con versiones anteriores. |
+| HU-15 | `src/app.js`, `src/storage.js` | `bestScores` guarda el record por nivel. |
 | HU-16 | `src/styles.css` | Transiciones, seleccion visual, progreso y feedback de tablero. |
-| HU-17 | `src/app.js` | `playTone()` genera sonidos basicos con Web Audio API. |
+| HU-17 | `src/audio.js` | `playTone()` genera sonidos con Web Audio API y `ensureBackgroundMusic()` reproduce musica en loop. |
+| HU-18 | `src/mastery.js`, `src/app.js`, `src/views.js` | `calculateStars()` calcula estrellas, `mergeBestStars()` conserva la mejor maestria y la interfaz muestra estrellas/combos. |
 
 # 3. Integracion DevOps y ejecucion
 
@@ -636,14 +698,14 @@ flowchart TD
 | --- | --- |
 | `npm start` | Levanta el servidor local estatico. |
 | `npm run build` | Valida que los archivos estaticos existan y que los modulos carguen. |
-| `npm test` | Ejecuta pruebas automatizadas de la logica del juego. |
+| `npm test` | Ejecuta pruebas automatizadas de la logica del juego, maestria y persistencia. |
 
 ## 3.2 Pipeline CI/CD
 
 El archivo `.github/workflows/ci.yml` ejecuta:
 
 - Validacion estatica con `npm run build`.
-- Pruebas automatizadas con `npm test`.
+- Pruebas automatizadas con `npm test` (actualmente 12 pruebas).
 
 ## 3.3 Despliegue o contenedorizacion
 
@@ -660,3 +722,9 @@ El proyecto incluye un `Dockerfile` basico para ejecutar el MVP como aplicacion 
 | Maquina de estados | Se documento el flujo completo de seleccion, intercambio, cascadas, victoria y derrota. |
 | Trazabilidad | Se agrego una matriz HU -> archivo -> evidencia tecnica para conectar gestion agil con codigo. |
 | Mejora de reglas y experiencia | Se diferenciaron visualmente las fichas, se agrego animacion de eliminacion, se redujo el puntaje por combinacion, se ajustaron objetivos/movimientos y se descuenta movimiento en intercambios adyacentes sin combinacion. |
+| Menu y assets | Se incorporo una imagen generada como fondo a pantalla completa del menu principal. |
+| Audio mejorado | Se agrego musica de fondo en loop usando el archivo `.wav` de `src` y se mantuvo el control de sonido. |
+| Rediseno de niveles | Se reemplazo la vista plana de niveles por tarjetas dinamicas con estados, gradientes, emblemas y estrellas. |
+| Refactor modular | Se separo `app.js` en coordinacion de estado, `views.js` para renderizado, `audio.js` para sonido, `storage.js` para persistencia y `mastery.js` para estrellas. |
+| Maestria y combos | Se documento el sistema de 1 a 3 estrellas, persistencia de `starsByLevel` y feedback `Combo xN` para cascadas. |
+| Pruebas ampliadas | Se agregaron pruebas para calculo de estrellas, compatibilidad de progreso antiguo y conservacion de la mejor maestria. |
