@@ -89,6 +89,8 @@ El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1`. Se
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
+| 2026-07-09 | Sebastian | Se agrego una pantalla de derrota dedicada con estilo triste, resumen de puntaje/progreso, botones de reintento y mapa, y el sprite `assets/pirata_sprite.png` como personaje derrotado. |
+| 2026-07-09 | Sebastian | Se reemplazo el pirata dibujado con CSS por el sprite `assets/pirata.png` en la pantalla de victoria, manteniendo la animacion de entrada del personaje. |
 | 2026-07-08 | Sebastian | Se mejoro la guia rapida con contraste correcto para la paleta navy/dorado, pasos numerados y tarjetas de gemas legibles con nombre y puntos. |
 | 2026-07-08 | Sebastian | Se agregaron transiciones mas naturales al completar un nivel: el tablero celebra y se atenua, el fondo de victoria entra con blur, la tarjeta aparece con rebote suave y los elementos de recompensa entran de forma escalonada. Tambien se adapto la paleta general del juego a tonos navy/dorado para integrarse con la pantalla de victoria. |
 | 2026-07-08 | Sebastian | Se rediseno la pantalla de victoria con estilo de recompensa: pirata anfitrion, estrella central animada, monedas ganadas, puntaje obtenido, barra de progreso del episodio y botones para siguiente nivel, repetir o volver al mapa. |

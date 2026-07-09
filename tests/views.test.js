@@ -59,3 +59,29 @@ test("game screens can render the quick info guide", () => {
   assert.match(html, /Jade/);
   assert.match(html, /12 pts/);
 });
+
+test("lost games render the defeat overlay", () => {
+  const currentGame = createGame(1);
+  currentGame.status = "lost";
+  currentGame.score = 420;
+  currentGame.movesLeft = 0;
+
+  const html = renderGame({
+    currentGame,
+    selectedCell: null,
+    clearingCells: new Set(),
+    message: "Sin movimientos disponibles.",
+    lastCombo: 0,
+    progress: {
+      bestScores: {},
+      starsByLevel: {},
+      sound: true
+    }
+  });
+
+  assert.match(html, /defeat-overlay/);
+  assert.match(html, /pirata_sprite\.png/);
+  assert.match(html, /Nivel fallido/);
+  assert.match(html, /Reintentar nivel/);
+  assert.match(html, /Volver al mapa/);
+});
