@@ -752,6 +752,16 @@ button {
   animation: boardComplete 700ms cubic-bezier(0.2, 0.9, 0.18, 1) both;
 }
 
+.game-status-lost .game-header,
+.game-status-lost .hud,
+.game-status-lost .status-panel {
+  animation: boardDefeatFade 520ms ease both;
+}
+
+.game-status-lost .board {
+  animation: boardDefeat 620ms ease both;
+}
+
 .message.combo-message {
   border-left-color: #f59e0b;
   background: #fff7d6;
@@ -916,84 +926,14 @@ button {
 .pirate-host {
   position: relative;
   z-index: 1;
-  width: 230px;
-  height: 310px;
+  width: min(260px, 100%);
+  max-height: 340px;
   justify-self: center;
   align-self: end;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 22px 20px rgba(0, 0, 0, 0.34));
   animation: pirateEnter 780ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
-}
-
-.pirate-hat,
-.pirate-face,
-.pirate-coat {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.pirate-hat {
-  top: 18px;
-  width: 190px;
-  height: 82px;
-  border-radius: 54% 54% 18% 18%;
-  background:
-    linear-gradient(90deg, transparent 0 18%, #facc15 18% 23%, transparent 23% 77%, #facc15 77% 82%, transparent 82%),
-    #4b2413;
-  box-shadow: 0 12px 0 #2b160d;
-}
-
-.pirate-hat::after {
-  content: "x";
-  position: absolute;
-  left: 78px;
-  top: 24px;
-  color: #ffffff;
-  font-weight: 900;
-}
-
-.pirate-face {
-  top: 88px;
-  width: 116px;
-  height: 132px;
-  border-radius: 42% 42% 48% 48%;
-  background: #d59668;
-  box-shadow:
-    -28px 18px 0 #4b2413,
-    28px 18px 0 #4b2413,
-    inset 0 -32px 0 #6f351d;
-}
-
-.pirate-face::before {
-  content: "";
-  position: absolute;
-  left: 24px;
-  top: 42px;
-  width: 18px;
-  height: 10px;
-  border-radius: 999px;
-  background: #1f2937;
-  box-shadow: 52px 0 0 #1f2937;
-}
-
-.pirate-face::after {
-  content: "";
-  position: absolute;
-  left: 36px;
-  top: 84px;
-  width: 44px;
-  height: 12px;
-  border-radius: 999px;
-  background: #2b160d;
-}
-
-.pirate-coat {
-  bottom: 0;
-  width: 180px;
-  height: 128px;
-  border-radius: 44px 44px 10px 10px;
-  background:
-    linear-gradient(90deg, #1d4ed8 0 16%, transparent 16% 84%, #1d4ed8 84%),
-    linear-gradient(145deg, #7c3f1d, #3f2112);
 }
 
 .victory-content {
@@ -1134,6 +1074,171 @@ button {
   min-height: 54px;
   font-size: 1.05rem;
   box-shadow: 0 14px 28px rgba(15, 159, 143, 0.28);
+}
+
+.defeat-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(rgba(5, 10, 24, 0.78), rgba(5, 10, 24, 0.84)),
+    radial-gradient(circle at 24% 72%, rgba(59, 130, 246, 0.18), transparent 30%),
+    #0b1020;
+  backdrop-filter: blur(5px);
+  animation: victoryBackdrop 620ms ease both;
+}
+
+.defeat-card {
+  width: min(840px, 100%);
+  min-height: 390px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  align-items: end;
+  gap: 18px;
+  padding: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(9, 14, 29, 0.98), rgba(15, 23, 42, 0.9)),
+    radial-gradient(circle at 50% 28%, rgba(96, 165, 250, 0.16), transparent 24%);
+  color: #ffffff;
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.45);
+  animation: defeatCardEnter 620ms cubic-bezier(0.16, 1, 0.3, 1) 100ms both;
+}
+
+.defeat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0 18%, rgba(148, 163, 184, 0.07) 18% 19%, transparent 19%),
+    radial-gradient(circle at 82% 80%, rgba(15, 159, 143, 0.12), transparent 28%);
+  pointer-events: none;
+}
+
+.defeat-pirate {
+  position: relative;
+  z-index: 1;
+  width: min(255px, 100%);
+  max-height: 320px;
+  justify-self: center;
+  align-self: end;
+  object-fit: contain;
+  object-position: bottom center;
+  filter:
+    grayscale(0.16)
+    drop-shadow(0 22px 20px rgba(0, 0, 0, 0.38));
+  animation: defeatPirateEnter 720ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+}
+
+.defeat-content {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+}
+
+.defeat-badge {
+  display: inline-grid;
+  align-items: center;
+  min-height: 30px;
+  margin: 0 0 12px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: rgba(96, 165, 250, 0.16);
+  color: #bfdbfe;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.defeat-content h2 {
+  margin: 0 0 10px;
+  color: #cbd5e1;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  line-height: 0.95;
+  text-shadow:
+    0 5px 0 rgba(30, 41, 59, 0.9),
+    0 12px 20px rgba(0, 0, 0, 0.34);
+}
+
+.defeat-copy {
+  max-width: 430px;
+  margin: 0 0 18px;
+  color: #b8c4d6;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.defeat-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.defeat-stats span {
+  min-height: 74px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.defeat-stats small,
+.defeat-progress small {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.defeat-stats strong,
+.defeat-progress strong {
+  color: #ffffff;
+  font-size: 1.18rem;
+}
+
+.defeat-progress {
+  margin: 0 0 16px;
+}
+
+.defeat-progress div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.defeat-progress span {
+  display: block;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.defeat-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #64748b, #60a5fa);
+}
+
+.defeat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.defeat-retry {
+  min-width: min(100%, 220px);
+  min-height: 54px;
 }
 
 .confetti {
@@ -1502,7 +1607,21 @@ button {
     display: none;
   }
 
+  .defeat-card {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding-top: 68px;
+  }
+
+  .defeat-pirate {
+    display: none;
+  }
+
   .reward-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .defeat-stats {
     grid-template-columns: 1fr;
   }
 }
@@ -1620,5 +1739,53 @@ button {
   100% {
     opacity: 0.42;
     transform: translateY(8px);
+  }
+}
+
+@keyframes boardDefeat {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  100% {
+    transform: scale(0.97);
+    filter: brightness(0.62) saturate(0.72);
+  }
+}
+
+@keyframes boardDefeatFade {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0.34;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes defeatCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(36px) scale(0.94);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes defeatPirateEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) rotate(-2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
   }
 }

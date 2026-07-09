@@ -42,10 +42,10 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
   const progressPercent = Math.round((progressData.current / progressData.target) * 100);
   const bestScore = progress.bestScores[currentGame.level.id] ?? 0;
   const bestStars = progress.starsByLevel[currentGame.level.id] ?? 0;
-  const resultBlock =
-    currentGame.status === "lost" ? renderResultBlock(currentGame, bestStars) : "";
   const victoryOverlay =
     currentGame.status === "won" ? renderVictoryOverlay(currentGame, bestStars) : "";
+  const defeatOverlay =
+    currentGame.status === "lost" ? renderDefeatOverlay(currentGame, progressData) : "";
 
   return `
     <section class="game-view game-status-${currentGame.status}">
@@ -101,10 +101,10 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
           </section>
           ${lastCombo > 1 ? `<p class="combo-banner">Combo x${lastCombo}</p>` : ""}
           <p class="message ${lastCombo > 1 ? "combo-message" : ""}">${message}</p>
-          ${resultBlock}
         </aside>
       </section>
       ${victoryOverlay}
+      ${defeatOverlay}
     </section>
     ${renderInfoHelp(infoOpen)}
   `;
@@ -178,33 +178,6 @@ function renderCell(currentGame, selectedCell, clearingCells, cell, rowIndex, co
   `;
 }
 
-function renderResultBlock(currentGame, bestStars) {
-  const won = currentGame.status === "won";
-  const hasNext = currentGame.level.id < LEVELS.length;
-  const earnedStars = currentGame.earnedStars ?? 0;
-  return `
-    <section class="result-panel ${won ? "won" : "lost"}">
-      <p class="panel-label">${won ? "Victoria" : "Derrota"}</p>
-      <h2>${won ? "Nivel superado" : "Intentalo otra vez"}</h2>
-      ${
-        won
-          ? `<div class="result-stars">
-              ${renderStars(earnedStars, "Estrellas ganadas")}
-              <span class="result-best-stars">Mejor ${bestStars}</span>
-            </div>`
-          : ""
-      }
-      <p>Puntuacion final: ${currentGame.score}</p>
-      <div class="result-actions">
-        <button class="primary-button" data-action="${won && hasNext ? "next-level" : "retry"}">
-          ${won && hasNext ? "Siguiente" : "Reintentar"}
-        </button>
-        <button class="secondary-button" data-action="levels">Niveles</button>
-      </div>
-    </section>
-  `;
-}
-
 function renderVictoryOverlay(currentGame, bestStars) {
   const earnedStars = currentGame.earnedStars ?? 0;
   const hasNext = currentGame.level.id < LEVELS.length;
@@ -226,11 +199,7 @@ function renderVictoryOverlay(currentGame, bestStars) {
           <span class="reward-pill coin-pill"><b></b>${coinsEarned}</span>
           <span class="reward-pill star-pill"><b></b>${earnedStars}</span>
         </div>
-        <div class="pirate-host" aria-hidden="true">
-          <span class="pirate-hat"></span>
-          <span class="pirate-face"></span>
-          <span class="pirate-coat"></span>
-        </div>
+        <img class="pirate-host" src="./assets/pirata.png" alt="" aria-hidden="true" />
         <div class="victory-content">
           <h2>Nivel completado!</h2>
           <div class="victory-star-stage" aria-hidden="true">
@@ -266,6 +235,44 @@ function renderVictoryOverlay(currentGame, bestStars) {
               ${hasNext ? `Siguiente: nivel ${nextLevel}` : "Jugar otra vez"}
             </button>
             <button class="secondary-button" data-action="retry">Repetir nivel</button>
+            <button class="quiet-button" data-action="levels">Volver al mapa</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderDefeatOverlay(currentGame, progressData) {
+  const progressPercent = Math.round((progressData.current / progressData.target) * 100);
+
+  return `
+    <section class="defeat-overlay" aria-label="Derrota">
+      <div class="defeat-card">
+        <img class="defeat-pirate" src="./assets/pirata_sprite.png" alt="" aria-hidden="true" />
+        <div class="defeat-content">
+          <p class="defeat-badge">Sin movimientos</p>
+          <h2>Nivel fallido</h2>
+          <p class="defeat-copy">Te quedaste cerca. Ajusta tu estrategia y vuelve por el tesoro.</p>
+          <div class="defeat-stats">
+            <span>
+              <small>Puntaje obtenido</small>
+              <strong>${currentGame.score}</strong>
+            </span>
+            <span>
+              <small>Objetivo</small>
+              <strong>${progressData.label}</strong>
+            </span>
+          </div>
+          <div class="defeat-progress">
+            <div>
+              <small>Progreso del objetivo</small>
+              <strong>${progressPercent}%</strong>
+            </div>
+            <span><i style="width: ${progressPercent}%"></i></span>
+          </div>
+          <div class="defeat-actions">
+            <button class="primary-button defeat-retry" data-action="retry">Reintentar nivel</button>
             <button class="quiet-button" data-action="levels">Volver al mapa</button>
           </div>
         </div>
