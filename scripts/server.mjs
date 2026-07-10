@@ -19,10 +19,28 @@ const contentTypes = new Map([
   [".wav", "audio/wav"]
 ]);
 
+function getClerkPublishableKey() {
+  return (
+    process.env.CLERK_PUBLISHABLE_KEY ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    ""
+  );
+}
+
 function createStaticServer() {
   return http.createServer(async (request, response) => {
     try {
       const requestUrl = new URL(request.url, `http://${request.headers.host}`);
+      if (requestUrl.pathname === "/clerk-config.json") {
+        response.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store"
+        });
+        response.end(JSON.stringify({ publishableKey: getClerkPublishableKey() }));
+        return;
+      }
+
       const pathname = decodeURIComponent(requestUrl.pathname);
       const relativePath = pathname === "/" ? "index.html" : pathname.slice(1);
       const absolutePath = path.resolve(root, relativePath);

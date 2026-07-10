@@ -99,11 +99,76 @@ button {
 
 .home-actions,
 .footer-actions,
-.result-actions {
+.result-actions,
+.auth-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 28px;
+}
+
+.auth-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    linear-gradient(90deg, rgba(8, 13, 29, 0.96) 0%, rgba(8, 13, 29, 0.7) 52%, rgba(8, 13, 29, 0.14) 100%),
+    url("./menu-art.png") center / cover no-repeat;
+}
+
+.auth-panel {
+  width: min(460px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(17, 26, 47, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.auth-panel h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2rem, 7vw, 3.4rem);
+  line-height: 0.96;
+}
+
+.auth-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.auth-bar {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 8px 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(17, 26, 47, 0.92);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.auth-bar span {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clerk-user-button {
+  width: 32px;
+  min-height: 32px;
+  display: grid;
+  place-items: center;
 }
 
 .primary-button,

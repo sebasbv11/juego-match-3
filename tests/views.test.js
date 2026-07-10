@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createGame } from "../src/gameLogic.js";
+import { renderAuthGate } from "../src/auth.js";
 import { renderGame } from "../src/views.js";
 
 test("won games render the animated victory overlay", () => {
@@ -84,4 +85,11 @@ test("lost games render the defeat overlay", () => {
   assert.match(html, /Nivel fallido/);
   assert.match(html, /Reintentar nivel/);
   assert.match(html, /Volver al mapa/);
+});
+
+test("auth gate prompts for Clerk setup when no publishable key is configured", () => {
+  const html = renderAuthGate({ status: "setup-required" });
+
+  assert.match(html, /Configura tu llave publica/);
+  assert.match(html, /CLERK_PUBLISHABLE_KEY/);
 });
