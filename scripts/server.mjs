@@ -1,6 +1,6 @@
 import http from "node:http";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,8 @@ const contentTypes = new Map([
   [".wav", "audio/wav"]
 ]);
 
+await loadEnvFile(path.join(root, ".env"));
+
 function getClerkPublishableKey() {
   return (
     process.env.CLERK_PUBLISHABLE_KEY ||
@@ -26,6 +28,29 @@ function getClerkPublishableKey() {
     process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
     ""
   );
+}
+
+async function loadEnvFile(filePath) {
+  try {
+    const content = await readFile(filePath, "utf8");
+    for (const line of content.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
+        continue;
+      }
+
+      const [key, ...valueParts] = trimmed.split("=");
+      if (process.env[key]) {
+        continue;
+      }
+
+      process.env[key] = valueParts.join("=").trim().replace(/^['"]|['"]$/g, "");
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
 }
 
 function createStaticServer() {
@@ -57,7 +82,8 @@ function createStaticServer() {
       const extension = path.extname(filePath);
 
       response.writeHead(200, {
-        "Content-Type": contentTypes.get(extension) ?? "application/octet-stream"
+        "Content-Type": contentTypes.get(extension) ?? "application/octet-stream",
+        "Cache-Control": "no-store"
       });
       createReadStream(filePath).pipe(response);
     } catch {

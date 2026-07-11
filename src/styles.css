@@ -138,6 +138,10 @@ button {
   line-height: 1.5;
 }
 
+.clerk-auth-mount {
+  margin-top: 20px;
+}
+
 .auth-bar {
   position: fixed;
   top: 14px;
