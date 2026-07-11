@@ -10,5 +10,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@clerk/clerk-js": "^6.25.2"
   }
 }

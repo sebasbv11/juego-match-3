@@ -1,10 +1,12 @@
 import { GEM_META, LEVELS, areAdjacent, createGame } from "./gameLogic.js";
+import { createAuthController, renderAuthBar, renderAuthGate } from "./auth.js";
 import { ensureBackgroundMusic, playTone, updateBackgroundMusic } from "./audio.js";
 import { calculateStars, mergeBestStars } from "./mastery.js";
 import { createDefaultProgress, loadProgress, saveProgress } from "./storage.js";
 import { renderGame, renderHome, renderLevels } from "./views.js";
 
 const app = document.querySelector("#app");
+const auth = createAuthController({ onChange: render });
 
 let progress = loadProgress();
 let screen = "home";
@@ -20,6 +22,16 @@ let suppressClick = false;
 let infoOpen = false;
 
 app.addEventListener("click", (event) => {
+  const authTarget = event.target.closest("[data-auth-action]");
+  if (authTarget) {
+    handleAuthAction(authTarget.dataset.authAction);
+    return;
+  }
+
+  if (auth.state.status !== "signed-in") {
+    return;
+  }
+
   if (suppressClick) {
     suppressClick = false;
     return;
@@ -40,6 +52,10 @@ app.addEventListener("click", (event) => {
 });
 
 app.addEventListener("pointerdown", (event) => {
+  if (auth.state.status !== "signed-in") {
+    return;
+  }
+
   const cellTarget = getCellTarget(event);
   if (!cellTarget || cellTarget.disabled || !currentGame || currentGame.status !== "playing") {
     return;
@@ -53,6 +69,10 @@ app.addEventListener("pointerdown", (event) => {
 });
 
 app.addEventListener("pointerover", (event) => {
+  if (auth.state.status !== "signed-in") {
+    return;
+  }
+
   if (!dragCell) {
     return;
   }
@@ -73,6 +93,10 @@ app.addEventListener("pointerover", (event) => {
 });
 
 app.addEventListener("pointerup", (event) => {
+  if (auth.state.status !== "signed-in") {
+    return;
+  }
+
   if (!dragCell) {
     return;
   }
@@ -98,6 +122,21 @@ app.addEventListener("pointercancel", () => {
 });
 
 render();
+auth.init();
+
+function handleAuthAction(action) {
+  if (action === "sign-in") {
+    auth.signIn();
+  }
+
+  if (action === "sign-up") {
+    auth.signUp();
+  }
+
+  if (action === "sign-out") {
+    auth.signOut();
+  }
+}
 
 function handleAction(action, data) {
   if (action === "home") {
@@ -326,25 +365,34 @@ function completeLevel() {
 }
 
 function render() {
+  if (auth.state.status !== "signed-in") {
+    app.innerHTML = renderAuthGate(auth.state);
+    return;
+  }
+
+  let html = renderAuthBar(auth.state.user);
+
   if (screen === "home") {
-    app.innerHTML = renderHome({ infoOpen });
+    html += renderHome({ infoOpen });
   }
   if (screen === "levels") {
-    app.innerHTML = renderLevels(progress, { infoOpen });
+    html += renderLevels(progress, { infoOpen });
   }
   if (screen === "game") {
-    renderGameScreen();
+    html += renderGameScreen();
   }
+
+  app.innerHTML = html;
+  auth.mountUserButton(document.querySelector("#clerk-user-button"));
 }
 
 function renderGameScreen() {
   if (!currentGame) {
     screen = "levels";
-    app.innerHTML = renderLevels(progress);
-    return;
+    return renderLevels(progress, { infoOpen });
   }
 
-  app.innerHTML = renderGame({
+  return renderGame({
     currentGame,
     selectedCell,
     clearingCells,

@@ -32,10 +32,19 @@ GemQuest es un juego web tipo Match-3 en evolucion hacia una version de producci
 ## Ejecucion local
 
 ```bash
+npm install
 npm start
 ```
 
 Abrir `http://127.0.0.1:4173`.
+
+Para habilitar Clerk, crea una aplicacion en `https://dashboard.clerk.com`, copia la publishable key y define:
+
+```bash
+CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key
+```
+
+El servidor solo expone esta llave publica al navegador desde `/clerk-config.json`; no uses `CLERK_SECRET_KEY` en codigo cliente.
 
 ## Pruebas
 
