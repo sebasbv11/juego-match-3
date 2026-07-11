@@ -384,6 +384,7 @@ function render() {
 
   app.innerHTML = html;
   auth.mountUserButton(document.querySelector("#clerk-user-button"));
+  auth.mountActiveForm(document.querySelector("#clerk-auth-mount"));
 }
 
 function renderGameScreen() {

@@ -1,14 +1,18 @@
 const CLERK_BROWSER_SCRIPTS = [
+  "/npm/@clerk/clerk-js@6/dist/clerk.browser.js",
   "/node_modules/@clerk/clerk-js/dist/clerk.browser.js",
   "https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6.25.2/dist/clerk.browser.js"
 ];
+
+const CLERK_UI_SCRIPTS = ["/npm/@clerk/ui@1/dist/ui.browser.js"];
 
 export function createAuthController({ onChange } = {}) {
   const state = {
     status: "loading",
     user: null,
     error: "",
-    clerk: null
+    clerk: null,
+    activeForm: null
   };
 
   async function init() {
@@ -20,9 +24,9 @@ export function createAuthController({ onChange } = {}) {
         return;
       }
 
-      await loadClerkScript();
-      state.clerk = new window.Clerk(publishableKey);
-      await state.clerk.load();
+      await loadClerkUiScript(publishableKey);
+      await loadClerkScript(publishableKey);
+      state.clerk = await initializeClerk(publishableKey);
       syncState();
       state.clerk.addListener(syncState);
     } catch (error) {
@@ -36,15 +40,18 @@ export function createAuthController({ onChange } = {}) {
   function syncState() {
     state.user = state.clerk?.user ?? null;
     state.status = state.user ? "signed-in" : "signed-out";
+    if (state.status === "signed-in") {
+      state.activeForm = null;
+    }
     onChange?.();
   }
 
   function signIn() {
-    state.clerk?.openSignIn();
+    openHostedAuth("sign-in");
   }
 
   function signUp() {
-    state.clerk?.openSignUp();
+    openHostedAuth("sign-up");
   }
 
   async function signOut() {
@@ -58,13 +65,87 @@ export function createAuthController({ onChange } = {}) {
     }
   }
 
+  function mountActiveForm(target) {
+    if (state.status !== "signed-out" || !state.activeForm || !target || !state.clerk) {
+      return;
+    }
+
+    showAuthForm(target, state.activeForm);
+  }
+
+  function showAuthForm(target, mode) {
+    if (!hasClerkUiMethod(mode)) {
+      state.error = "Clerk no expuso el formulario de inicio. Revisa que ClerkJS y Clerk UI carguen correctamente.";
+      state.status = "error";
+      onChange?.();
+      return;
+    }
+
+    clearAuthForm(target);
+    if (mode === "sign-up") {
+      state.clerk.mountSignUp(target);
+      return;
+    }
+
+    state.clerk.mountSignIn(target);
+  }
+
+  function hasClerkUiMethod(mode) {
+    return mode === "sign-up"
+      ? typeof state.clerk?.mountSignUp === "function"
+      : typeof state.clerk?.mountSignIn === "function";
+  }
+
+  function redirectToHostedAuth(mode) {
+    if (mode === "sign-up" && typeof state.clerk?.redirectToSignUp === "function") {
+      state.clerk.redirectToSignUp();
+      return true;
+    }
+
+    if (typeof state.clerk?.redirectToSignIn === "function") {
+      state.clerk.redirectToSignIn();
+      return true;
+    }
+
+    return false;
+  }
+
+  function openHostedAuth(mode) {
+    if (!state.clerk) {
+      return;
+    }
+
+    const redirectUrl = window.location.href;
+    const options = {
+      signInFallbackRedirectUrl: redirectUrl,
+      signUpFallbackRedirectUrl: redirectUrl
+    };
+
+    if (mode === "sign-up" && typeof state.clerk.redirectToSignUp === "function") {
+      state.clerk.redirectToSignUp(options);
+      return;
+    }
+
+    if (typeof state.clerk.redirectToSignIn === "function") {
+      state.clerk.redirectToSignIn(options);
+    }
+  }
+
+  function clearAuthForm(target) {
+    state.clerk?.unmountSignIn?.(target);
+    state.clerk?.unmountSignUp?.(target);
+    target.replaceChildren();
+  }
+
   return {
     state,
     init,
     signIn,
     signUp,
     signOut,
-    mountUserButton
+    mountUserButton,
+    mountActiveForm,
+    openHostedAuth
   };
 }
 
@@ -115,6 +196,11 @@ export function renderAuthGate({ status, error }) {
           <button class="primary-button" data-auth-action="sign-in">Iniciar sesion</button>
           <button class="secondary-button" data-auth-action="sign-up">Crear cuenta</button>
         </div>
+        ${
+          status === "signed-out"
+            ? `<div id="clerk-auth-mount" class="clerk-auth-mount"></div>`
+            : ""
+        }
       </div>
     </section>
   `;
@@ -141,15 +227,17 @@ async function loadPublishableKey() {
   return config.publishableKey;
 }
 
-async function loadClerkScript() {
+async function loadClerkScript(publishableKey) {
   if (window.Clerk) {
     return;
   }
 
-  for (const source of CLERK_BROWSER_SCRIPTS) {
+  for (const source of getClerkScriptSources(publishableKey)) {
     try {
-      await appendScript(source);
-      return;
+      await appendScript(source, publishableKey);
+      if (window.Clerk) {
+        return;
+      }
     } catch {
       // Try the next official package source.
     }
@@ -158,11 +246,76 @@ async function loadClerkScript() {
   throw new Error("No se pudo cargar ClerkJS.");
 }
 
-function appendScript(source) {
+async function loadClerkUiScript(publishableKey) {
+  for (const source of getClerkUiScriptSources(publishableKey)) {
+    try {
+      await appendScript(source, publishableKey);
+      return;
+    } catch {
+      // ClerkJS can still fall back to bundled UI in some versions.
+    }
+  }
+}
+
+function getClerkScriptSources(publishableKey) {
+  const frontendApi = getFrontendApiFromPublishableKey(publishableKey);
+  const instanceSources = frontendApi
+    ? [`https://${frontendApi}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`]
+    : [];
+
+  return [
+    ...instanceSources,
+    ...CLERK_BROWSER_SCRIPTS.map((source) =>
+      frontendApi && source.startsWith("/") ? `https://${frontendApi}${source}` : source
+    )
+  ];
+}
+
+function getClerkUiScriptSources(publishableKey) {
+  const frontendApi = getFrontendApiFromPublishableKey(publishableKey);
+  if (!frontendApi) {
+    return [];
+  }
+
+  return CLERK_UI_SCRIPTS.map((source) => `https://${frontendApi}${source}`);
+}
+
+function getFrontendApiFromPublishableKey(publishableKey) {
+  const encodedPayload = publishableKey.replace(/^pk_(test|live)_/, "");
+  try {
+    return atob(encodedPayload).replace(/\$$/, "");
+  } catch {
+    return "";
+  }
+}
+
+async function initializeClerk(publishableKey) {
+  if (!window.Clerk) {
+    throw new Error("ClerkJS no esta disponible en la ventana.");
+  }
+
+  if (typeof window.Clerk === "function") {
+    const clerk = new window.Clerk(publishableKey);
+    await clerk.load(getClerkLoadOptions());
+    return clerk;
+  }
+
+  await window.Clerk.load(getClerkLoadOptions());
+  return window.Clerk;
+}
+
+function getClerkLoadOptions() {
+  return window.__internal_ClerkUICtor
+    ? { ui: { ClerkUI: window.__internal_ClerkUICtor } }
+    : {};
+}
+
+function appendScript(source, publishableKey) {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.async = true;
     script.crossOrigin = "anonymous";
+    script.dataset.clerkPublishableKey = publishableKey;
     script.src = source;
     script.addEventListener("load", resolve, { once: true });
     script.addEventListener("error", reject, { once: true });
