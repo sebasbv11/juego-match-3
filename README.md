@@ -7,7 +7,7 @@ GemQuest es un juego web tipo Match-3 en evolucion hacia una version de producci
 - HU-01 a HU-06: tablero jugable, combinaciones, eliminacion, gravedad y nuevas fichas.
 - HU-07 a HU-09: puntuacion, movimientos limitados y objetivos por nivel.
 - HU-10 a HU-14: inicio, seleccion de nivel, victoria, derrota y persistencia de progreso por cuenta.
-- HU-15: mejor puntuacion por nivel guardada por usuario autenticado.
+- HU-15: mejor puntuacion por nivel guardada por usuario autenticado y ranking diario online por nivel con Supabase.
 - HU-16/HU-17: fichas con siluetas distintas, animacion al eliminar combinaciones y sonido basico generado en el navegador.
 - Interaccion por clic o arrastre: el jugador puede seleccionar gemas con clic o arrastrar una gema hacia una celda adyacente.
 - Set visual personalizado de gemas en `assets/gems/`, con imagenes PNG uniformes para los seis tipos de ficha.
@@ -23,6 +23,7 @@ GemQuest es un juego web tipo Match-3 en evolucion hacia una version de producci
 - El cofre del mapa permanece cerrado y bloqueado mientras falte completar algun nivel. Al completar los 3 niveles, se abre con estrellas animadas y muestra una recompensa de monedas, gemas y estrellas.
 - Al completar un nivel aparece una interfaz modal de victoria sobre el tablero, con fondo atenuado, animacion de entrada y confetti.
 - Al perder, se mantiene una tarjeta de resultado integrada en el panel lateral para permitir reintentar rapidamente.
+- La ventana de ranking diario permite consultar el Top 10 por nivel y se reinicia cada dia filtrando las puntuaciones por fecha.
 
 ## Niveles
 
@@ -52,11 +53,24 @@ Clerk es obligatorio para ejecutar GemQuest como producto final. Sin `CLERK_PUBL
 
 ```bash
 CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
 HOST=0.0.0.0
 PORT=4173
 ```
 
 El servidor solo expone esta llave publica al navegador desde `/clerk-config.json`; no uses `CLERK_SECRET_KEY` en codigo cliente. Cada cuenta guarda su progreso en una clave propia de `localStorage` basada en el ID de usuario de Clerk.
+
+## Ranking diario con Supabase
+
+GemQuest usa Supabase para guardar el ranking diario por nivel. La app envia el puntaje cuando el jugador gana un nivel y consulta el Top 10 del dia desde la ventana **Ranking**.
+
+1. Crea un proyecto en Supabase.
+2. Abre el SQL Editor y ejecuta `supabase/gemquest_daily_leaderboard.sql`.
+3. Copia `SUPABASE_URL` y la llave publica/anon del proyecto en `.env`.
+4. Reinicia `npm start`.
+
+El reinicio diario se modela con la columna `score_date`: la interfaz solo consulta las filas del dia actual en America/Guayaquil, por lo que cada dia inicia con ranking vacio sin necesitar borrar historico.
 
 ## Pruebas
 
@@ -107,40 +121,21 @@ El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build`
 
 Tambien incluye `.dockerignore` para excluir del contexto Docker archivos que no son necesarios en la imagen, como documentacion, pruebas, configuracion local, variables de entorno y assets fuente no usados por la app final.
 
+### Ejecucion con Docker
+
+```bash
+docker build -t gemquest .
+docker run --rm -p 4173:4173 --env-file .env gemquest
+```
+
+Abrir `http://127.0.0.1:4173`.
+
 ## Persistencia
 
 El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<clerk-user-id>`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido para cada cuenta.
 
+El ranking diario se guarda en Supabase dentro de `gemquest_daily_scores`, separado por `score_date`, `level_id` y `player_id`.
+
 ## Bitacora de cambios
 
-| Fecha | Responsable | Cambios realizados |
-| --- | --- | --- |
-| 2026-07-12 | Jostin Romero | Se configuro GemQuest como PWA instalable para moviles: se agregaron `manifest.webmanifest`, `sw.js`, metadatos para iOS/Android, modo `fullscreen`, orientacion horizontal, icono de instalacion y cache offline de los assets locales del juego. |
-| 2026-07-12 | Jostin Romero | Se adapto la entrada tactil movil con `touchstart`, `touchmove` y `touchend`, evitando scroll accidental con `touch-action: none` y haciendo que la gema seleccionada siga el dedo durante el arrastre. |
-| 2026-07-12 | Jostin Romero | Se optimizo el arrastre en moviles usando `requestAnimationFrame` para reducir trabajo durante `touchmove` y mejorar la sensacion de fluidez en dispositivos de menor rendimiento. |
-| 2026-07-12 | Jostin Romero | Se corrigio la experiencia responsive de PWA en movil: mapa de niveles compacto, sprites visibles en victoria/derrota, overlays sin scroll, fondo opaco y bloqueo real de desplazamiento con la clase `overlay-locked`. |
-| 2026-07-12 | Jostin Romero | Se ajusto la pantalla de victoria movil para integrar mejor el sprite del pirata, reduciendo el tamano de los botones y aumentando ligeramente el personaje para mantener una composicion mas limpia. |
-| 2026-07-12 | Jostin Romero | Se restauró la jugabilidad de escritorio con `pointerdown`, `pointermove` y `pointerup` solo para mouse/lapiz, manteniendo en PC el arrastre visual tipo Candy Crush sin afectar los controles tactiles moviles. |
-| 2026-07-12 | Jostin Romero | Se reactivaron las animaciones del mapa de niveles en movil, incluyendo nubes, brillo del camino, nodos flotantes, cofre y estrellas, conservando apagadas las animaciones pesadas de los overlays. |
-| 2026-07-12 | Sebastian | Se agrego `.dockerignore` para optimizar el contexto Docker y evitar copiar archivos innecesarios como `.git`, `.github`, `.vscode`, `docs`, `tests`, `.env`, documentacion y assets fuente no usados. |
-| 2026-07-12 | Sebastian | Se procesaron `assets/Estrella.png` y `assets/Tesoro sprite.jpg` para generar versiones PNG con fondo transparente: `assets/estrella_transparente.png` y `assets/tesoro_transparente.png`. |
-| 2026-07-12 | Sebastian | Se actualizo el cofre del mapa: queda cerrado/bloqueado mientras falte completar algun nivel y se abre con estrellas animadas y mensaje de recompensa al completar los 3 niveles. |
-| 2026-07-12 | Sebastian | Se corrigio el calculo de progreso del mapa para que completar los 3 niveles cuente como 100% aunque no se obtengan 3 estrellas perfectas en cada nivel; el nivel 3 tambien queda marcado como completado despues de ganarlo. |
-| 2026-07-11 | Adriel Sanchez | Se agrando el mapa de niveles, se alinearon sus controles, se agregaron nubes animadas, brillo del camino, pulso de nodos y destello del cofre para hacerlo mas interactivo. |
-| 2026-07-11 | Adriel Sanchez | Se hizo mas discreta la barra de cuenta autenticada, reduciendo tamano, sombra y opacidad, y dejandola fija en la esquina superior derecha. |
-| 2026-07-11 | Adriel Sanchez | Se dejo Clerk como requisito de producto final: sin `CLERK_PUBLISHABLE_KEY` la app bloquea el acceso, y cada cuenta guarda progreso con una clave propia basada en el usuario de Clerk. |
-| 2026-07-11 | Adriel Sanchez | Se agrego `.env.example`, se documento la configuracion de Clerk para local/produccion y se cambio el servidor para escuchar en `0.0.0.0` cuando se despliega. |
-| 2026-07-11 | Adriel Sanchez | Se implementaron animaciones de arrastre para gemas: seleccion con brillo, seguimiento suavizado, empuje de gema vecina, retroceso en movimiento invalido y caida con rebote en movimientos validos. |
-| 2026-07-11 | Adriel Sanchez | Se reemplazo el obstaculo generico del nivel 3 por `assets/fence_sprite.png`, mostrando bloques de madera dentro del tablero. |
-| 2026-07-11 | Adriel Sanchez | Se ajustaron los botones de `Inicio` y `Reiniciar progreso` al estilo secundario del juego, y se restauro el bloqueo real de niveles hasta completar el nivel anterior. |
-| 2026-07-11 | Adriel Sanchez | Se creo el mapa de niveles pirata con camino sinuoso, tres nodos interactivos, cofre central, palmeras, barriles, rocas con calavera, cuerdas y estados visuales de nivel. |
-| 2026-07-09 | Sebastian | Se agrego una pantalla de derrota dedicada con estilo triste, resumen de puntaje/progreso, botones de reintento y mapa, y el sprite `assets/pirata_sprite.png` como personaje derrotado. |
-| 2026-07-09 | Sebastian | Se reemplazo el pirata dibujado con CSS por el sprite `assets/pirata.png` en la pantalla de victoria, manteniendo la animacion de entrada del personaje. |
-| 2026-07-08 | Sebastian | Se mejoro la guia rapida con contraste correcto para la paleta navy/dorado, pasos numerados y tarjetas de gemas legibles con nombre y puntos. |
-| 2026-07-08 | Sebastian | Se agregaron transiciones mas naturales al completar un nivel: el tablero celebra y se atenua, el fondo de victoria entra con blur, la tarjeta aparece con rebote suave y los elementos de recompensa entran de forma escalonada. Tambien se adapto la paleta general del juego a tonos navy/dorado para integrarse con la pantalla de victoria. |
-| 2026-07-08 | Sebastian | Se rediseno la pantalla de victoria con estilo de recompensa: pirata anfitrion, estrella central animada, monedas ganadas, puntaje obtenido, barra de progreso del episodio y botones para siguiente nivel, repetir o volver al mapa. |
-| 2026-07-08 | Sebastian | Se completo la HU-12 con una pantalla de victoria dedicada: objetivo cumplido, estrellas destacadas, puntuacion, movimientos restantes, record anterior, aviso de nuevo record y acciones para avanzar o volver a niveles. |
-| 2026-07-08 | Sebastian | Se reorganizo la pantalla de juego separando visualmente el tablero del panel de objetivo/progreso. Se agregaron valores de puntaje por tipo de gema y se mejoro la guia de ayuda con la tabla de gemas y puntos. Se actualizaron textos visibles para tratar GemQuest como producto en mejora hacia produccion y no como MVP. |
-| 2026-07-08 | Sebastian | Se agrego un boton fijo de ayuda con icono de interrogacion para consultar como jugar, como generar combos, como sumar mas puntos y como funcionan las gemas dentro del sistema actual. |
-| 2026-07-08 | Sebastian | Se completo el flujo visual de victoria con overlay animado, tarjeta de resultado y confetti. Se corrigio el estado de arrastre para mantener el intercambio por drag sin clic duplicado despues del movimiento. |
-| 2026-07-08 | Sebastian | Se agregaron assets personalizados y uniformes para las gemas en `assets/gems/`. Se mejoro la interaccion del tablero con arrastre de gemas, resaltado de celda destino y efectos visuales durante el movimiento. Se incorporo una pantalla modal de victoria con animacion de entrada, fondo atenuado, resumen de puntuacion, record y confetti. Se actualizo la documentacion del proyecto y se agrego el archivo `Planificacion_Gestion_Agil_GemQuest.md`. |
+La bitacora completa del proyecto se mantiene en `docs/modelado.md`, que funciona como documento vivo del entregable.

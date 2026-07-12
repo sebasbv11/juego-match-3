@@ -12,6 +12,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@clerk/clerk-js": "^6.25.2"
+    "@clerk/clerk-js": "^6.25.2",
+    "@supabase/supabase-js": "^2.49.8"
   }
 }

@@ -1,6 +1,12 @@
 import { GEM_META, LEVELS, areAdjacent, createGame } from "./gameLogic.js";
 import { createAuthController, renderAuthBar, renderAuthGate } from "./auth.js";
 import { ensureBackgroundMusic, playTone, updateBackgroundMusic } from "./audio.js";
+import {
+  createLeaderboardState,
+  getPlayerName,
+  loadDailyLeaderboard,
+  submitDailyScore
+} from "./leaderboard.js";
 import { calculateStars, mergeBestStars } from "./mastery.js";
 import { createDefaultProgress, loadProgress, saveProgress } from "./storage.js";
 import { renderGame, renderHome, renderLevels } from "./views.js";
@@ -25,6 +31,10 @@ let dragFrame = null;
 let pendingDragPoint = null;
 let suppressClick = false;
 let infoOpen = false;
+let leaderboardOpen = false;
+let leaderboardLevelId = 1;
+let leaderboardState = createLeaderboardState();
+let leaderboardRequestId = 0;
 
 app.addEventListener("click", (event) => {
   const authTarget = event.target.closest("[data-auth-action]");
@@ -285,6 +295,24 @@ function handleAction(action, data) {
     infoOpen = false;
     render();
   }
+
+  if (action === "open-ranking") {
+    const levelId = Number(data.level) || currentGame?.level.id || progress.unlockedLevel;
+    openLeaderboard(levelId);
+  }
+
+  if (action === "close-ranking") {
+    leaderboardOpen = false;
+    render();
+  }
+
+  if (action === "leaderboard-level") {
+    openLeaderboard(Number(data.level) || leaderboardLevelId);
+  }
+
+  if (action === "refresh-ranking") {
+    refreshLeaderboard(leaderboardLevelId);
+  }
 }
 
 function showHome() {
@@ -478,6 +506,12 @@ function completeLevel() {
     progress.unlockedLevel = Math.max(progress.unlockedLevel, Math.min(levelId + 1, LEVELS.length));
     message = `Nivel completado. ${earnedStars} estrella(s).`;
     playTone(progress.sound, 720, 0.14);
+    publishScoreToLeaderboard({
+      levelId,
+      score: currentGame.score,
+      stars: earnedStars,
+      movesLeft: currentGame.movesLeft
+    });
   } else {
     currentGame.earnedStars = 0;
     message = "Sin movimientos disponibles.";
@@ -499,10 +533,10 @@ function render() {
   let html = renderAuthBar(auth.state.user);
 
   if (screen === "home") {
-    html += renderHome({ infoOpen });
+    html += renderHome(getOverlayState());
   }
   if (screen === "levels") {
-    html += renderLevels(progress, { infoOpen });
+    html += renderLevels(progress, getOverlayState());
   }
   if (screen === "game") {
     html += renderGameScreen();
@@ -528,8 +562,17 @@ function renderGameScreen() {
     message,
     lastCombo,
     progress,
-    infoOpen
+    ...getOverlayState()
   });
+}
+
+function getOverlayState() {
+  return {
+    infoOpen,
+    leaderboardOpen,
+    leaderboardLevelId,
+    leaderboardState
+  };
 }
 
 function positionKey({ row, col }) {
@@ -550,6 +593,61 @@ function syncProgressForUser() {
 
 function saveCurrentProgress() {
   saveProgress(progress, progressOwnerId);
+}
+
+async function openLeaderboard(levelId) {
+  leaderboardOpen = true;
+  await refreshLeaderboard(levelId);
+}
+
+async function refreshLeaderboard(levelId) {
+  const requestId = ++leaderboardRequestId;
+  leaderboardLevelId = Math.min(Math.max(Number(levelId) || 1, 1), LEVELS.length);
+  leaderboardState = createLeaderboardState({ status: "loading", entries: [] });
+  render();
+
+  try {
+    const nextState = await loadDailyLeaderboard(leaderboardLevelId);
+    if (requestId === leaderboardRequestId) {
+      leaderboardState = nextState;
+      render();
+    }
+  } catch (error) {
+    if (requestId === leaderboardRequestId) {
+      leaderboardState = createLeaderboardState({
+        status: "error",
+        entries: [],
+        error: error instanceof Error ? error.message : "No se pudo cargar el ranking."
+      });
+      render();
+    }
+  }
+}
+
+async function publishScoreToLeaderboard({ levelId, score, stars, movesLeft }) {
+  try {
+    await submitDailyScore({
+      levelId,
+      playerId: progressOwnerId || getProgressOwnerId(auth.state.user),
+      playerName: getPlayerName(auth.state.user),
+      score,
+      stars,
+      movesLeft
+    });
+
+    if (leaderboardOpen && leaderboardLevelId === levelId) {
+      await refreshLeaderboard(levelId);
+    }
+  } catch (error) {
+    if (leaderboardOpen && leaderboardLevelId === levelId) {
+      leaderboardState = createLeaderboardState({
+        status: "error",
+        entries: [],
+        error: error instanceof Error ? error.message : "No se pudo guardar el puntaje."
+      });
+      render();
+    }
+  }
 }
 
 function getProgressOwnerId(user) {

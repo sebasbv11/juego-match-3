@@ -36,8 +36,9 @@ El MVP implementado corresponde a la opcion B: juego casual tipo Match-3. La sol
 | Descuento por intento adyacente | Implementado: todo intercambio adyacente consume 1 movimiento, aunque no coincida. |
 | Tres niveles con objetivos distintos | Implementado |
 | Persistencia de progreso | Implementado con `localStorage` |
-| Mejor puntuacion por nivel | Implementado con `localStorage` |
+| Mejor puntuacion por nivel | Implementado con `localStorage` y ranking diario online en Supabase |
 | Estrellas de maestria por nivel | Implementado con `localStorage` |
+| Ranking diario por nivel | Implementado con Supabase, Top 10 por nivel y reinicio diario por fecha |
 | Pantallas de inicio, niveles y resultado | Implementadas |
 | Menu visual | Implementado con imagen de fondo generada y pantalla completa |
 | Tarjetas dinamicas de niveles | Implementadas con estados, gradientes y emblemas CSS |
@@ -46,6 +47,7 @@ El MVP implementado corresponde a la opcion B: juego casual tipo Match-3. La sol
 | Pruebas automatizadas | Implementadas con `node --test` |
 | CI/CD | Pipeline basico en GitHub Actions |
 | Contenedorizacion | `Dockerfile` incluido |
+| Base de datos externa | Supabase para ranking diario por nivel |
 
 # 1. Planificacion y gestion agil
 
@@ -78,6 +80,7 @@ El MVP incluye:
 - Sistema de maestria con 1 a 3 estrellas por nivel.
 - Retroalimentacion de combos/cascadas.
 - Persistencia basica del progreso.
+- Ranking diario por nivel como ampliacion del record del jugador.
 - Interfaz clara para iniciar, jugar, ganar o perder una partida.
 
 ## 1.3 Product Backlog
@@ -103,7 +106,6 @@ El Product Backlog contiene las historias de usuario priorizadas para construir 
 | HU-15 | Guardar record | EP-05 Persistencia | Como jugador, quiero guardar mi mejor puntuacion para intentar superar mi record. | Could | S | Implementado |
 | HU-16 | Animaciones | EP-06 Experiencia de usuario | Como jugador, quiero animaciones al eliminar y caer gemas para que el juego se sienta mas dinamico. | Could | M | Implementado |
 | HU-17 | Sonidos | EP-06 Experiencia de usuario | Como jugador, quiero efectos de sonido para recibir retroalimentacion durante la partida. | Could | S | Implementado |
-| HU-18 | Maestria por estrellas y combos | EP-03 Sistema de niveles | Como jugador, quiero recibir estrellas y ver combos para medir mi dominio del nivel y motivarme a repetirlo. | Could | M | Implementado |
 
 ### Estimacion y priorizacion
 
@@ -134,10 +136,9 @@ La priorizacion se realizo con **MoSCoW**:
 | HU-12 | La pantalla de victoria aparece al cumplir el objetivo. Muestra el puntaje obtenido. Permite avanzar o volver a la seleccion de nivel. |
 | HU-13 | La pantalla de derrota aparece cuando se agotan los movimientos sin cumplir el objetivo. Permite reintentar el nivel. |
 | HU-14 | El progreso se guarda al completar un nivel. Al volver al juego se conserva el ultimo nivel desbloqueado. El guardado funciona aunque se cierre el navegador. |
-| HU-15 | El sistema guarda la mejor puntuacion obtenida. Si el jugador supera su record, el valor anterior se actualiza. El record se muestra en la interfaz. |
-| HU-16 | Las gemas tienen animacion al desaparecer. La seleccion, eliminacion, tarjetas de nivel, mensajes de combo y resultados entregan retroalimentacion visual sin impedir jugar correctamente. |
+| HU-15 | El sistema guarda la mejor puntuacion obtenida. Si el jugador supera su record, el valor anterior se actualiza. El record se muestra en la interfaz. Como mejora posterior, al ganar un nivel se publica el puntaje en un ranking diario por nivel usando Supabase y se conserva solo el mejor resultado diario del jugador. |
+| HU-16 | Las gemas tienen animacion al desaparecer. La seleccion, eliminacion, tarjetas de nivel, mensajes de combo, estrellas de maestria y resultados entregan retroalimentacion visual sin impedir jugar correctamente. |
 | HU-17 | El juego reproduce sonidos en acciones importantes y musica de fondo en loop. Los sonidos no se superponen de forma molesta. El jugador puede activar o desactivar sonido. |
-| HU-18 | Al ganar un nivel se calculan de 1 a 3 estrellas. El mejor resultado de estrellas por nivel se guarda. Las cascadas muestran mensajes de combo como `Combo x2` o `Combo x3`. |
 
 ## 1.5 Priorizacion MoSCoW
 
@@ -145,8 +146,8 @@ La priorizacion se realizo con **MoSCoW**:
 | --- | --- | --- |
 | Must Have | HU-01, HU-02, HU-03, HU-04, HU-05, HU-06, HU-07, HU-08, HU-09 | Son necesarias para que el juego sea funcional y el MVP pueda completarse. |
 | Should Have | HU-10, HU-11, HU-12, HU-13, HU-14 | Mejoran el flujo de usuario y permiten una experiencia completa, aunque la mecanica principal puede existir sin ellas. |
-| Could Have | HU-15, HU-16, HU-17, HU-18 | Aportan valor adicional, rejugabilidad y mejor experiencia, pero no son indispensables para la entrega inicial. |
-| Won't Have | Tienda, sistema de vidas, ranking online, inicio de sesion | Se excluyen para mantener el alcance del MVP dentro del tiempo disponible. |
+| Could Have | HU-15, HU-16, HU-17 | Aportan valor adicional, rejugabilidad y mejor experiencia, pero no son indispensables para la entrega inicial. |
+| Won't Have | Tienda, sistema de vidas | Se excluyen para mantener el alcance del MVP dentro del tiempo disponible. |
 
 ## 1.6 Planificacion de sprints
 
@@ -184,7 +185,6 @@ La priorizacion se realizo con **MoSCoW**:
 | HU-15 | Guardar mejor puntuacion. | Pendiente o en progreso | Terminado |
 | HU-16 | Agregar animaciones. | Pendiente o en progreso | Terminado |
 | HU-17 | Agregar sonidos. | Pendiente o en progreso | Terminado |
-| HU-18 | Agregar estrellas de maestria y feedback de combos. | No contemplado en documento base | Terminado |
 
 ## 1.7 Ceremonias Scrum documentadas
 
@@ -214,7 +214,8 @@ Despues de estabilizar el MVP, se aplicaron mejoras incrementales orientadas a e
 - Audio de fondo en loop con control desde la preferencia de sonido.
 - Pantalla de niveles redisenada con tarjetas dinamicas, estados y feedback visual.
 - Refactor de frontend en modulos: `app.js`, `views.js`, `audio.js`, `storage.js` y `mastery.js`.
-- Sistema de estrellas de maestria y feedback de combos por cascadas.
+- Sistema de estrellas de maestria y feedback de combos por cascadas, documentado como mejora de HU-15, HU-16 y HU-17 sin crear nuevas historias.
+- Ranking diario por nivel con Supabase como extension del record de HU-15.
 - Ampliacion de pruebas automatizadas para maestria y compatibilidad de progreso guardado.
 
 ## 1.8 Tablero de gestion en Trello
@@ -258,7 +259,6 @@ Crear un tablero llamado **GemQuest - Gestion Agil** con las siguientes listas:
 - HU-15 Guardar record
 - HU-16 Animaciones
 - HU-17 Sonidos
-- HU-18 Maestria por estrellas y combos
 
 Si se actualiza el tablero despues del MVP, se recomienda agregar tambien tarjetas tecnicas de mejora:
 
@@ -390,9 +390,9 @@ El Story Mapping organiza las funcionalidades siguiendo el recorrido del jugador
 | Actualizar tablero | HU-04 Eliminar combinaciones, HU-05 Aplicar gravedad, HU-06 Generar nuevas fichas |
 | Progreso de la partida | HU-07 Sistema de puntuacion, HU-08 Movimientos limitados, HU-09 Objetivos por nivel |
 | Finalizar partida | HU-12 Pantalla de victoria, HU-13 Pantalla de derrota |
-| Guardar progreso | HU-14 Guardar progreso, HU-15 Guardar record |
+| Guardar progreso y records | HU-14 Guardar progreso, HU-15 Guardar record |
 | Mejorar experiencia | HU-16 Animaciones, HU-17 Sonidos |
-| Rejugar y dominar niveles | HU-18 Maestria por estrellas y combos |
+| Rejugar y dominar niveles | HU-15 Guardar record, HU-16 Animaciones, HU-17 Sonidos |
 
 ## 2.2 Arquitectura del sistema con modelo C4
 
@@ -402,7 +402,7 @@ El documento Word incluia diagramas generales de contexto y contenedores. En est
 - **Contenedores C4:** muestra los contenedores ejecutables o desplegables y su responsabilidad.
 - **Componentes:** se agrega para explicar la separacion entre capa de presentacion y logica del juego.
 
-Nota de correccion: el Word mencionaba una "Base de datos". En el MVP implementado no existe backend ni base de datos externa; la persistencia real se hace mediante `localStorage` del navegador. Por eso los diagramas actualizados usan **LocalStorage** como almacenamiento.
+Nota de actualizacion: el progreso personal del jugador se mantiene en `localStorage`, mientras que el ranking diario por nivel usa Supabase como base de datos externa. Clerk se mantiene como servicio de autenticacion.
 
 ### 2.2.1 Diagrama de Contexto C4
 
@@ -411,11 +411,15 @@ C4Context
 title Diagrama de Contexto C4 - GemQuest
 
 Person(jugador, "Jugador", "Persona que juega niveles Match-3, acumula puntos y desbloquea progreso.")
-System(gemquest, "GemQuest", "Juego web Match-3 con tablero, niveles, puntuacion, movimientos limitados y persistencia local.")
+System(gemquest, "GemQuest", "Juego web Match-3 con tablero, niveles, puntuacion, movimientos limitados, progreso local y ranking diario.")
 System_Ext(localStorage, "LocalStorage del navegador", "Almacenamiento local usado para progreso, records, estrellas de maestria y preferencia de sonido.")
+System_Ext(clerk, "Clerk", "Servicio externo de autenticacion de jugadores.")
+System_Ext(supabase, "Supabase", "Base de datos Postgres usada para ranking diario por nivel.")
 
 Rel(jugador, gemquest, "Juega, selecciona niveles e intercambia gemas", "Navegador web")
 Rel(gemquest, localStorage, "Guarda y consulta progreso del jugador", "API Web Storage")
+Rel(gemquest, clerk, "Autentica al jugador", "Clerk JS")
+Rel(gemquest, supabase, "Publica y consulta Top 10 diario", "Supabase JS / HTTPS")
 ```
 
 ### 2.2.2 Diagrama de Contenedores C4
@@ -428,10 +432,13 @@ Person(jugador, "Jugador", "Usuario final del juego.")
 
 System_Boundary(gemquest, "GemQuest") {
   Container(staticServer, "Servidor estatico", "Node.js / hosting estatico", "Entrega index.html, CSS y modulos JavaScript.")
-  Container(webApp, "Aplicacion web", "HTML, CSS, JavaScript", "Renderiza pantallas, tablero, HUD, seleccion de nivel, resultados, estrellas y feedback de combos.")
+  Container(webApp, "Aplicacion web", "HTML, CSS, JavaScript", "Renderiza pantallas, tablero, HUD, seleccion de nivel, resultados, ranking, estrellas y feedback de combos.")
   Container(gameLogic, "Modulo de logica del juego", "JavaScript ES Modules", "Genera tablero, valida intercambios, detecta combinaciones, resuelve cascadas, calcula puntaje y evalua objetivos.")
   ContainerDb(storage, "LocalStorage", "Web Storage API", "Persistencia de nivel desbloqueado, mejores puntuaciones, estrellas de maestria y preferencia de sonido.")
 }
+
+System_Ext(clerk, "Clerk", "Autenticacion de jugadores.")
+System_Ext(supabase, "Supabase Postgres", "Ranking diario por nivel con RLS y funcion SQL.")
 
 Rel(jugador, staticServer, "Abre la aplicacion", "HTTP")
 Rel(staticServer, webApp, "Entrega archivos estaticos")
@@ -439,51 +446,50 @@ Rel(jugador, webApp, "Interactua con el tablero", "Click / UI")
 Rel(webApp, gameLogic, "Invoca reglas del juego")
 Rel(gameLogic, webApp, "Devuelve estado actualizado")
 Rel(webApp, storage, "Lee y escribe progreso")
+Rel(webApp, clerk, "Inicia sesion y obtiene datos publicos del jugador", "HTTPS")
+Rel(webApp, supabase, "Guarda puntajes ganados y consulta ranking diario", "HTTPS")
 ```
 
 ### 2.2.3 Vista de Componentes
 
-Esta vista complementa C4 para mostrar la separacion interna mas importante del MVP: presentacion por un lado y reglas de juego por otro.
+Esta vista C4 muestra la separacion interna mas importante: presentacion, reglas de juego, persistencia local, audio y ranking online.
 
 ```mermaid
-flowchart LR
-  subgraph UI["Capa de presentacion"]
-    HTML["index.html"]
-    CSS["styles.css"]
-    App["app.js - coordinacion de estado"]
-    Views["views.js - renderizado"]
-  end
+C4Component
+title Diagrama de Componentes C4 - Aplicacion web GemQuest
 
-  subgraph Domain["Logica de dominio"]
-    Logic["gameLogic.js"]
-    Mastery["mastery.js"]
-    Levels["Definicion de niveles"]
-    Rules["Reglas Match-3"]
-  end
+Container_Boundary(webApp, "Aplicacion web") {
+  Component(app, "app.js", "Coordinador de estado", "Gestiona pantallas, eventos, partida activa, progreso, ranking y guardado.")
+  Component(views, "views.js", "Renderizado UI", "Genera HTML para inicio, mapa, tablero, resultados, guia y ranking.")
+  Component(logic, "gameLogic.js", "Fachada de dominio", "Expone funciones de tablero, niveles, reglas y estado de partida.")
+  Component(board, "board.js", "Logica de tablero", "Crea tablero, detecta combinaciones, aplica gravedad y recarga.")
+  Component(gameState, "gameState.js", "Estado de partida", "Aplica movimientos, cascadas, puntaje y victoria/derrota.")
+  Component(storageModule, "storage.js", "Persistencia local", "Lee y escribe progreso del jugador.")
+  Component(mastery, "mastery.js", "Maestria", "Calcula estrellas y conserva el mejor resultado.")
+  Component(leaderboard, "leaderboard.js", "Ranking diario", "Carga Supabase JS, publica puntajes y consulta Top 10 por nivel.")
+  Component(audio, "audio.js", "Audio", "Reproduce tonos y musica de fondo.")
+}
 
-  subgraph Services["Servicios del navegador"]
-    StorageModule["storage.js"]
-    AudioModule["audio.js"]
-    Storage["localStorage"]
-    Audio["Web Audio API / HTMLAudioElement"]
-  end
+ContainerDb(storage, "LocalStorage", "Web Storage API", "Progreso y preferencias.")
+System_Ext(clerk, "Clerk", "Autenticacion.")
+System_Ext(supabase, "Supabase Postgres", "Ranking diario.")
 
-  HTML --> App
-  CSS --> Views
-  App --> Views
-  App --> Logic
-  App --> Mastery
-  Logic --> Levels
-  Logic --> Rules
-  App --> StorageModule
-  App --> AudioModule
-  StorageModule --> Storage
-  AudioModule --> Audio
+Rel(app, views, "Renderiza estado")
+Rel(app, logic, "Ejecuta jugadas")
+Rel(logic, board, "Usa reglas de tablero")
+Rel(logic, gameState, "Usa estado de partida")
+Rel(app, storageModule, "Guarda progreso")
+Rel(app, mastery, "Calcula estrellas")
+Rel(app, leaderboard, "Publica y consulta ranking")
+Rel(app, audio, "Dispara feedback sonoro")
+Rel(storageModule, storage, "Lee/escribe")
+Rel(app, clerk, "Valida sesion")
+Rel(leaderboard, supabase, "RPC y consultas")
 ```
 
 ## 2.3 Modelo de Dominio
 
-El modelo de dominio representa los conceptos centrales del juego: jugador, partida, tablero, celdas, gemas, objetivos, puntuacion y progreso.
+El modelo de dominio representa los conceptos centrales del juego: jugador, partida, tablero, celdas, gemas, objetivos, puntuacion, progreso y ranking diario.
 
 ```mermaid
 classDiagram
@@ -556,8 +562,24 @@ classDiagram
     +conservarMejorResultado()
   }
 
+  class RankingDiario {
+    +fecha: date
+    +nivelId: int
+    +publicarPuntaje()
+    +consultarTop()
+  }
+
+  class EntradaRanking {
+    +jugadorId: string
+    +nombreJugador: string
+    +puntuacion: int
+    +estrellas: int
+    +movimientosRestantes: int
+  }
+
   Jugador "1" --> "1" ProgresoJugador : conserva
   Jugador "1" --> "0..*" Partida : juega
+  Jugador "1" --> "0..*" EntradaRanking : publica
   Partida "1" --> "1" Nivel : usa
   Partida "1" --> "1" Tablero : contiene
   Partida "1" --> "1" ObjetivoNivel : evalua
@@ -566,6 +588,8 @@ classDiagram
   Tablero "1" --> "64" Celda : formado por
   Celda "1" --> "0..1" Gema : contiene
   Nivel "1" --> "1" ObjetivoNivel : define
+  RankingDiario "1" --> "*" EntradaRanking : ordena
+  RankingDiario "*" --> "1" Nivel : pertenece
 ```
 
 ## 2.4 Maquina de estados del juego
@@ -595,7 +619,8 @@ stateDiagram-v2
   EvaluandoObjetivo --> Derrota: movimientos agotados
   EvaluandoObjetivo --> Jugando: quedan movimientos
 
-  CalculandoMaestria --> Victoria: asignar estrellas y guardar progreso
+  CalculandoMaestria --> PublicandoRanking: asignar estrellas y guardar progreso
+  PublicandoRanking --> Victoria: publicar puntaje diario o continuar sin bloquear
   Victoria --> SeleccionNivel: continuar
   Derrota --> PreparandoPartida: reintentar
 ```
@@ -618,8 +643,9 @@ La logica del tablero esta separada de la interfaz en `src/gameLogic.js`. Esto p
 | Recarga | Se generan nuevas gemas en los espacios superiores. | HU-06 |
 | Cascadas | Si despues de rellenar aparecen nuevas combinaciones, se resuelven automaticamente. | HU-03, HU-04, HU-05, HU-06 |
 | Obstaculos | Las combinaciones adyacentes rompen obstaculos del nivel 3. | HU-09 |
-| Combos | Cuando una jugada genera mas de una cascada, se muestra feedback `Combo xN` y se refuerza el sonido. | HU-16, HU-17, HU-18 |
-| Maestria | Al ganar se calculan de 1 a 3 estrellas segun puntuacion y movimientos restantes. | HU-18 |
+| Combos | Cuando una jugada genera mas de una cascada, se muestra feedback `Combo xN` y se refuerza el sonido. | HU-16, HU-17 |
+| Maestria | Al ganar se calculan de 1 a 3 estrellas segun puntuacion y movimientos restantes. | HU-15, HU-16 |
+| Ranking diario | Al ganar se publica el mejor puntaje diario del jugador por nivel y se consulta el Top 10 del dia. | HU-15 |
 
 ### Flujo de resolucion de una jugada
 
@@ -682,13 +708,12 @@ Para niveles de recoleccion y obstaculos, `src/mastery.js` convierte el objetivo
 | HU-09 | `src/gameLogic.js` | `isObjectiveComplete()` evalua objetivos de puntaje, recoleccion y obstaculos. |
 | HU-10 | `src/views.js` | `renderHome()` muestra pantalla inicial con arte de fondo definido en CSS. |
 | HU-11 | `src/views.js`, `src/styles.css` | `renderLevels()` muestra niveles bloqueados/desbloqueados con tarjetas dinamicas. |
-| HU-12 | `src/views.js` | `renderResultBlock()` muestra victoria, puntuacion y estrellas ganadas. |
-| HU-13 | `src/views.js` | `renderResultBlock()` muestra derrota. |
+| HU-12 | `src/views.js` | `renderVictoryOverlay()` muestra victoria, puntuacion, estrellas ganadas y acciones de avance. |
+| HU-13 | `src/views.js` | `renderDefeatOverlay()` muestra derrota, progreso del objetivo y acciones de reintento. |
 | HU-14 | `src/storage.js` | `loadProgress()`, `normalizeProgress()` y `saveProgress()` guardan progreso compatible con versiones anteriores. |
-| HU-15 | `src/app.js`, `src/storage.js` | `bestScores` guarda el record por nivel. |
-| HU-16 | `src/styles.css` | Transiciones, seleccion visual, progreso y feedback de tablero. |
+| HU-15 | `src/app.js`, `src/storage.js`, `src/leaderboard.js`, `supabase/gemquest_daily_leaderboard.sql` | `bestScores` guarda el record local por nivel y `leaderboard.js` publica/consulta el ranking diario Top 10 en Supabase. |
+| HU-16 | `src/styles.css`, `src/mastery.js`, `src/views.js` | Transiciones, seleccion visual, progreso, estrellas de maestria y feedback de combos/tablero. |
 | HU-17 | `src/audio.js` | `playTone()` genera sonidos con Web Audio API y `ensureBackgroundMusic()` reproduce musica en loop. |
-| HU-18 | `src/mastery.js`, `src/app.js`, `src/views.js` | `calculateStars()` calcula estrellas, `mergeBestStars()` conserva la mejor maestria y la interfaz muestra estrellas/combos. |
 
 # 3. Integracion DevOps y ejecucion
 
@@ -698,33 +723,91 @@ Para niveles de recoleccion y obstaculos, `src/mastery.js` convierte el objetivo
 | --- | --- |
 | `npm start` | Levanta el servidor local estatico. |
 | `npm run build` | Valida que los archivos estaticos existan y que los modulos carguen. |
-| `npm test` | Ejecuta pruebas automatizadas de la logica del juego, maestria y persistencia. |
+| `npm test` | Ejecuta pruebas automatizadas de la logica del juego, maestria, persistencia, vistas y ranking. |
 
 ## 3.2 Pipeline CI/CD
 
 El archivo `.github/workflows/ci.yml` ejecuta:
 
 - Validacion estatica con `npm run build`.
-- Pruebas automatizadas con `npm test` (actualmente 12 pruebas).
+- Pruebas automatizadas con `npm test`.
 
 ## 3.3 Despliegue o contenedorizacion
 
 El proyecto incluye un `Dockerfile` basico para ejecutar el MVP como aplicacion estatica servida por Node.js.
 
+Comandos de ejecucion:
+
+```bash
+docker build -t gemquest .
+docker run --rm -p 4173:4173 --env-file .env gemquest
+```
+
+Abrir `http://127.0.0.1:4173`.
+
+## 3.4 Base de datos Supabase para ranking diario
+
+El ranking diario por nivel se implementa como extension de HU-15. No se crea una nueva historia de usuario; se amplifica el record del jugador con un ranking online.
+
+| Elemento | Definicion |
+| --- | --- |
+| Tabla | `gemquest_daily_scores` |
+| Llave logica | `score_date`, `level_id`, `player_id` |
+| Reinicio diario | La interfaz consulta solo `score_date` del dia actual en America/Guayaquil. |
+| Escritura | Funcion SQL `submit_gemquest_daily_score()` |
+| Seguridad | RLS habilitado; lectura publica del ranking y escritura mediante funcion controlada. |
+| Configuracion | Variables `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` en `.env`. |
+
+El SQL de creacion se encuentra en `supabase/gemquest_daily_leaderboard.sql`.
+
 # 4. Bitacora de actualizaciones del documento vivo
 
-| Cambio | Descripcion |
+Esta bitacora consolida los cambios que antes estaban en `README.md`, los commits del repositorio y las actualizaciones recientes del entregable. El README queda como guia de ejecucion; este archivo queda como documento vivo oficial.
+
+## 4.1 Responsables normalizados desde Git
+
+| Autor visto en commits o trabajo local | Responsable en el documento |
 | --- | --- |
-| Consolidacion del Word | Se incorporaron portada, integrantes, planificacion, backlog, criterios, sprints, ceremonias, Trello, cambio de requisito y modelado. |
-| Evidencias visuales | Se extrajeron las capturas del `.docx` y se enlazaron desde `docs/assets/entregable-1-2/`. |
-| Correccion C4 | Se reemplazaron diagramas generales por diagramas C4 de contexto y contenedores en Mermaid. |
-| Modelo de dominio actualizado | Se ajusto el dominio a lo implementado: partida, nivel, objetivo, tablero, celda, gema, progreso y puntuacion. |
-| Maquina de estados | Se documento el flujo completo de seleccion, intercambio, cascadas, victoria y derrota. |
-| Trazabilidad | Se agrego una matriz HU -> archivo -> evidencia tecnica para conectar gestion agil con codigo. |
-| Mejora de reglas y experiencia | Se diferenciaron visualmente las fichas, se agrego animacion de eliminacion, se redujo el puntaje por combinacion, se ajustaron objetivos/movimientos y se descuenta movimiento en intercambios adyacentes sin combinacion. |
-| Menu y assets | Se incorporo una imagen generada como fondo a pantalla completa del menu principal. |
-| Audio mejorado | Se agrego musica de fondo en loop usando el archivo `.wav` de `src` y se mantuvo el control de sonido. |
-| Rediseno de niveles | Se reemplazo la vista plana de niveles por tarjetas dinamicas con estados, gradientes, emblemas y estrellas. |
-| Refactor modular | Se separo `app.js` en coordinacion de estado, `views.js` para renderizado, `audio.js` para sonido, `storage.js` para persistencia y `mastery.js` para estrellas. |
-| Maestria y combos | Se documento el sistema de 1 a 3 estrellas, persistencia de `starsByLevel` y feedback `Combo xN` para cascadas. |
-| Pruebas ampliadas | Se agregaron pruebas para calculo de estrellas, compatibilidad de progreso antiguo y conservacion de la mejor maestria. |
+| `Sebastian Bravo Veliz` | Jordy Sebastian Bravo Veliz |
+| `Sebastian Alvarez` | Sebastian Esteban Alvarez De la Rosa |
+| `adriels27` | Adriel Elias Sanchez Zaldumbide |
+| `Jose Sarabia` | Jose Luis Sarabia Calderon |
+| `jostrootbash` | Romero Ponce Jostin Paul |
+
+## 4.2 Bitacora consolidada de cambios
+
+| Fecha | Responsable | Fuente | Cambios realizados |
+| --- | --- | --- | --- |
+| 2026-07-12 | Jordy Sebastian Bravo Veliz | Se movio la bitacora larga del `README.md` a `docs/modelado.md` para mantener un unico documento vivo, y el README quedo como guia de ejecucion y configuracion. |
+| 2026-07-12 | Jordy Sebastian Bravo Veliz | Se agrego ranking diario por nivel con Supabase: ventana Top 10, variables `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`, SQL de tabla, RLS, funcion de escritura y guia de ejecucion Docker. |
+| 2026-07-12 | Jordy Sebastian Bravo Veliz | Se corrigio el permiso de lectura del ranking agregando `grant select on public.gemquest_daily_scores to anon, authenticated`, manteniendo RLS activo. |
+| 2026-07-12 | Jordy Sebastian Bravo Veliz | Se actualizo el modelo C4 para incluir Clerk, Supabase, LocalStorage, servidor estatico y componentes internos como `leaderboard.js`. |
+| 2026-07-12 | Romero Ponce Jostin Paul | Se configuro GemQuest como PWA instalable para moviles con `manifest.webmanifest`, `sw.js`, cache offline, metadatos iOS/Android, modo fullscreen y orientacion horizontal. |
+| 2026-07-12 | Romero Ponce Jostin Paul | Se adapto la entrada tactil movil con `touchstart`, `touchmove`, `touchend`, `touch-action: none` y arrastre fluido usando `requestAnimationFrame`. |
+| 2026-07-12 | Romero Ponce Jostin Paul | Se corrigio la experiencia responsive de la PWA: mapa compacto, sprites visibles en victoria/derrota, overlays sin scroll y bloqueo real de desplazamiento con `overlay-locked`. |
+| 2026-07-12 | Romero Ponce Jostin Paul | Se restauraron controles de escritorio con `pointerdown`, `pointermove` y `pointerup` para mouse/lapiz, manteniendo separada la experiencia tactil movil. |
+| 2026-07-12 | Romero Ponce Jostin Paul | Se reactivaron animaciones del mapa en movil: nubes, brillo del camino, nodos flotantes, cofre y estrellas, reduciendo animaciones pesadas de overlays. |
+| 2026-07-11 | Sebastian Esteban Alvarez De la Rosa | Se agrego efecto de animacion y recompensa al completar los 3 niveles, incluyendo cofre del mapa, estrellas y mensaje de recompensa. |
+| 2026-07-11 | Sebastian Esteban Alvarez De la Rosa | Se corrigio el calculo de progreso del mapa para contar la campana como 100% al completar los 3 niveles, aunque no se obtengan 3 estrellas perfectas. |
+| 2026-07-11 | Sebastian Esteban Alvarez De la Rosa | Se agrego `.dockerignore` para optimizar el contexto Docker y excluir archivos no necesarios como `.git`, `.github`, `.vscode`, `docs`, `tests`, `.env` y documentacion pesada. |
+| 2026-07-11 | Sebastian Esteban Alvarez De la Rosa | Se procesaron assets de estrella y tesoro para obtener versiones PNG transparentes usadas en el mapa y recompensas. |
+| 2026-07-11 | Adriel Elias Sanchez Zaldumbide | Se creo y mejoro el mapa interactivo de niveles con camino pirata, tres nodos, cofre central, decoracion, estados visuales, nubes, brillo y animaciones. |
+| 2026-07-11 | Adriel Elias Sanchez Zaldumbide | Se implementaron efectos de arrastre y combinacion de gemas: seleccion con brillo, seguimiento suavizado, empuje de gema vecina, retroceso invalido y caida con rebote. |
+| 2026-07-11 | Adriel Elias Sanchez Zaldumbide | Se actualizaron documentos del proyecto para reflejar cambios de interfaz, autenticacion, mapa, experiencia visual y avance del producto. |
+| 2026-07-11 | Adriel Elias Sanchez Zaldumbide | Se hizo mas discreta la barra de cuenta autenticada y se ajustaron botones de inicio/reinicio al estilo visual del juego. |
+| 2026-07-10 | Jose Luis Sarabia Calderon | Se integro Clerk como autenticacion del producto, incluyendo flujo embebido de inicio de sesion y persistencia de progreso por usuario. |
+| 2026-07-10 | Jose Luis Sarabia Calderon | Se modularizo la logica del juego en archivos enfocados como `board.js`, `gameData.js`, `gameFunctions.js`, `gameState.js` y fachada `gameLogic.js`. |
+| 2026-07-10 | Jose Luis Sarabia Calderon | Se preparo la configuracion de autenticacion para entorno local/produccion mediante variables publicas y servidor estatico. |
+| 2026-07-09 | Sebastian Esteban Alvarez De la Rosa | Se agrego pantalla de derrota con resumen de puntaje/progreso, botones de reintento y mapa, y sprite `pirata_sprite.png`. |
+| 2026-07-09 | Sebastian Esteban Alvarez De la Rosa | Se reemplazo el pirata dibujado con CSS por sprite visual en la pantalla de victoria, manteniendo animacion de entrada. |
+| 2026-07-08 | Sebastian Esteban Alvarez De la Rosa | Se agregaron assets personalizados para gemas en `assets/gems/`, interaccion por arrastre, resaltado de celda destino y modal de victoria con confetti. |
+| 2026-07-08 | Sebastian Esteban Alvarez De la Rosa | Se mejoro la experiencia visual y la pantalla de victoria con transiciones naturales, fondo con blur, tablero atenuado, recompensas y paleta navy/dorado. |
+| 2026-07-08 | Sebastian Esteban Alvarez De la Rosa | Se mejoro la guia rapida con mejor contraste, pasos numerados y tabla de valor de gemas. |
+| 2026-07-08 | Sebastian Esteban Alvarez De la Rosa | Se documento la planificacion y se agrego bitacora inicial al README, luego trasladada a este documento vivo. |
+| 2026-07-08 | Jose Luis Sarabia Calderon | Se refactorizo el frontend en modulos y se mejoraron vistas, persistencia, audio y separacion de responsabilidades. |
+| 2026-07-08 | Jose Luis Sarabia Calderon | Se agrego sistema de estrellas de maestria y feedback de combos por cascadas, documentado dentro de HU-15, HU-16 y HU-17 sin crear nuevas historias. |
+| 2026-07-08 | Jose Luis Sarabia Calderon | Se actualizo `docs/modelado.md` para reflejar nuevas funciones, reglas, trazabilidad y cambios del juego. |
+| 2026-07-08 | Jordy Sebastian Bravo Veliz | Se integraron cambios de la rama `cambios` hacia `master` mediante pull request y merge. |
+| 2026-07-07 | Jordy Sebastian Bravo Veliz | Se mejoraron reglas y experiencia visual: objetivos, movimientos, animaciones, fichas diferenciadas y descuento de movimiento en intentos adyacentes. |
+| 2026-07-07 | Jordy Sebastian Bravo Veliz | Se realizo la implementacion inicial de GemQuest con tablero Match-3, intercambio de gemas, combinaciones, puntuacion, niveles y estructura base del proyecto. |
+

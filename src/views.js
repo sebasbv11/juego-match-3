@@ -1,6 +1,11 @@
 import { GEM_META, LEVELS, describeObjective, getObjectiveProgress } from "./gameLogic.js";
 
-export function renderHome({ infoOpen = false } = {}) {
+export function renderHome({
+  infoOpen = false,
+  leaderboardOpen = false,
+  leaderboardLevelId = 1,
+  leaderboardState = {}
+} = {}) {
   return `
     <section class="home-view">
       <div class="home-copy">
@@ -13,10 +18,16 @@ export function renderHome({ infoOpen = false } = {}) {
       </div>
     </section>
     ${renderInfoHelp(infoOpen)}
+    ${renderLeaderboard({ isOpen: leaderboardOpen, selectedLevelId: leaderboardLevelId, state: leaderboardState })}
   `;
 }
 
-export function renderLevels(progress, { infoOpen = false } = {}) {
+export function renderLevels(progress, {
+  infoOpen = false,
+  leaderboardOpen = false,
+  leaderboardLevelId = 1,
+  leaderboardState = {}
+} = {}) {
   const campaignComplete = LEVELS.every((level) => isLevelComplete(level, progress));
 
   return `
@@ -66,9 +77,11 @@ export function renderLevels(progress, { infoOpen = false } = {}) {
       }
       <div class="footer-actions">
         <button class="secondary-button" data-action="reset-progress">Reiniciar progreso</button>
+        <button class="secondary-button" data-action="open-ranking">Ver ranking diario</button>
       </div>
     </section>
     ${renderInfoHelp(infoOpen)}
+    ${renderLeaderboard({ isOpen: leaderboardOpen, selectedLevelId: leaderboardLevelId, state: leaderboardState })}
   `;
 }
 
@@ -80,7 +93,10 @@ export function renderGame({
   message,
   lastCombo,
   progress,
-  infoOpen = false
+  infoOpen = false,
+  leaderboardOpen = false,
+  leaderboardLevelId = 1,
+  leaderboardState = {}
 }) {
   const progressData = getObjectiveProgress(currentGame);
   const progressPercent = Math.round((progressData.current / progressData.target) * 100);
@@ -101,6 +117,9 @@ export function renderGame({
         </div>
         <button class="quiet-button" data-action="toggle-sound" aria-pressed="${progress.sound}">
           Sonido ${progress.sound ? "on" : "off"}
+        </button>
+        <button class="quiet-button" data-action="open-ranking" data-level="${currentGame.level.id}">
+          Ranking
         </button>
       </header>
 
@@ -151,6 +170,7 @@ export function renderGame({
       ${defeatOverlay}
     </section>
     ${renderInfoHelp(infoOpen)}
+    ${renderLeaderboard({ isOpen: leaderboardOpen, selectedLevelId: leaderboardLevelId, state: leaderboardState })}
   `;
 }
 
@@ -403,6 +423,104 @@ function renderInfoHelp(isOpen) {
   `;
 }
 
+function renderLeaderboard({ isOpen, selectedLevelId, state }) {
+  const normalizedState = {
+    status: "idle",
+    entries: [],
+    error: "",
+    scoreDate: "",
+    ...state
+  };
+
+  return `
+    <button class="ranking-button" data-action="open-ranking" aria-label="Ranking diario">Top</button>
+    ${
+      isOpen
+        ? `<section class="ranking-overlay" aria-label="Ranking diario">
+            <div class="ranking-panel">
+              <button class="ranking-close" data-action="close-ranking" aria-label="Cerrar">x</button>
+              <div class="ranking-heading">
+                <p class="panel-label">Ranking diario</p>
+                <h2>Mejores puntajes por nivel</h2>
+                <small>${normalizedState.scoreDate || "Hoy"}</small>
+              </div>
+              <div class="ranking-tabs" role="tablist" aria-label="Niveles del ranking">
+                ${LEVELS.map(
+                  (level) => `
+                    <button
+                      class="${level.id === selectedLevelId ? "active" : ""}"
+                      data-action="leaderboard-level"
+                      data-level="${level.id}"
+                      role="tab"
+                      aria-selected="${level.id === selectedLevelId}"
+                    >
+                      Nivel ${level.id}
+                    </button>
+                  `
+                ).join("")}
+              </div>
+              ${renderLeaderboardBody(normalizedState)}
+              <div class="ranking-actions">
+                <button class="secondary-button" data-action="refresh-ranking">Actualizar</button>
+              </div>
+            </div>
+          </section>`
+        : ""
+    }
+  `;
+}
+
+function renderLeaderboardBody(state) {
+  if (state.status === "loading") {
+    return `<p class="ranking-message">Cargando ranking...</p>`;
+  }
+
+  if (state.status === "unconfigured") {
+    return `<p class="ranking-message">${escapeHtml(state.error)}</p>`;
+  }
+
+  if (state.status === "error") {
+    return `<p class="ranking-message error">${escapeHtml(state.error || "No se pudo cargar el ranking.")}</p>`;
+  }
+
+  if (!state.entries.length) {
+    return `<p class="ranking-message">Aun no hay puntuaciones registradas hoy.</p>`;
+  }
+
+  return `
+    <div class="ranking-table" role="table" aria-label="Tabla de ranking diario">
+      <div class="ranking-row ranking-head" role="row">
+        <span>#</span>
+        <span>Jugador</span>
+        <span>Puntos</span>
+        <span>Est.</span>
+        <span>Mov.</span>
+      </div>
+      ${state.entries.map((entry) => renderLeaderboardRow(entry)).join("")}
+    </div>
+  `;
+}
+
+function renderLeaderboardRow(entry) {
+  return `
+    <div class="ranking-row" role="row">
+      <span>${entry.rank}</span>
+      <strong>${escapeHtml(entry.playerName)}</strong>
+      <span>${entry.score}</span>
+      <span>${entry.stars}</span>
+      <span>${entry.movesLeft}</span>
+    </div>
+  `;
+}
+
 function positionKey({ row, col }) {
   return `${row},${col}`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }

@@ -31,6 +31,24 @@ function getClerkPublishableKey() {
   );
 }
 
+function getSupabaseConfig() {
+  return {
+    url:
+      process.env.SUPABASE_URL ||
+      process.env.VITE_SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      "",
+    publishableKey:
+      process.env.SUPABASE_PUBLISHABLE_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.VITE_SUPABASE_ANON_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      ""
+  };
+}
+
 async function loadEnvFile(filePath) {
   try {
     const content = await readFile(filePath, "utf8");
@@ -64,6 +82,15 @@ function createStaticServer() {
           "Cache-Control": "no-store"
         });
         response.end(JSON.stringify({ publishableKey: getClerkPublishableKey() }));
+        return;
+      }
+
+      if (requestUrl.pathname === "/supabase-config.json") {
+        response.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store"
+        });
+        response.end(JSON.stringify(getSupabaseConfig()));
         return;
       }
 

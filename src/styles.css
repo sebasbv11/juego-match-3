@@ -2128,6 +2128,164 @@ body.overlay-locked .app {
   font-weight: 900;
 }
 
+.ranking-button {
+  position: fixed;
+  right: 76px;
+  bottom: 18px;
+  z-index: 9;
+  width: 58px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2dd4bf, #0f766e);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 900;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.22);
+}
+
+.ranking-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 10, 24, 0.62);
+  backdrop-filter: blur(5px);
+  animation: overlayFadeIn 160ms ease both;
+}
+
+.ranking-panel {
+  width: min(640px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  position: relative;
+  padding: 24px;
+  border: 1px solid rgba(45, 212, 191, 0.26);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(45, 212, 191, 0.16), transparent 24%),
+    linear-gradient(145deg, rgba(17, 26, 47, 0.98), rgba(8, 13, 29, 0.98));
+  color: #f8fafc;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
+.ranking-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(45, 212, 191, 0.28);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.ranking-heading {
+  padding-right: 42px;
+}
+
+.ranking-heading h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.ranking-heading small {
+  display: block;
+  margin-top: 8px;
+  color: #99f6e4;
+  font-weight: 800;
+}
+
+.ranking-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.ranking-tabs button {
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.ranking-tabs button.active {
+  border-color: rgba(45, 212, 191, 0.64);
+  background: rgba(45, 212, 191, 0.2);
+  color: #99f6e4;
+}
+
+.ranking-message {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #dbe7f6;
+  line-height: 1.45;
+}
+
+.ranking-message.error {
+  border-color: rgba(248, 113, 113, 0.34);
+  color: #fecaca;
+}
+
+.ranking-table {
+  display: grid;
+  gap: 8px;
+}
+
+.ranking-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 76px 54px 54px;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #dbe7f6;
+}
+
+.ranking-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-row span {
+  font-weight: 800;
+}
+
+.ranking-head {
+  min-height: 34px;
+  background: rgba(15, 118, 110, 0.34);
+  color: #99f6e4;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.ranking-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
 @keyframes mapLightSweep {
   0%,
   42% {
@@ -2698,6 +2856,26 @@ body.overlay-locked .app {
   .cell.push-line .gem {
     transition-duration: 60ms;
     will-change: transform;
+  }
+
+  .ranking-panel {
+    padding: 18px;
+  }
+
+  .ranking-row {
+    grid-template-columns: 32px minmax(0, 1fr) 64px 44px 44px;
+    gap: 6px;
+    padding: 0 8px;
+    font-size: 0.82rem;
+  }
+
+  .ranking-tabs {
+    gap: 6px;
+  }
+
+  .ranking-tabs button {
+    min-height: 38px;
+    font-size: 0.86rem;
   }
 }
 

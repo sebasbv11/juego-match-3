@@ -131,6 +131,40 @@ test("game screens can render the quick info guide", () => {
   assert.match(html, /12 pts/);
 });
 
+test("level screens can render the daily leaderboard window", () => {
+  const html = renderLevels(
+    {
+      unlockedLevel: 3,
+      bestScores: {},
+      starsByLevel: {},
+      sound: true
+    },
+    {
+      leaderboardOpen: true,
+      leaderboardLevelId: 2,
+      leaderboardState: {
+        status: "ready",
+        scoreDate: "2026-07-12",
+        entries: [
+          {
+            rank: 1,
+            playerName: "Adriel",
+            score: 1320,
+            stars: 3,
+            movesLeft: 5
+          }
+        ]
+      }
+    }
+  );
+
+  assert.match(html, /Ranking diario/);
+  assert.match(html, /Mejores puntajes por nivel/);
+  assert.match(html, /aria-selected="true"/);
+  assert.match(html, /Adriel/);
+  assert.match(html, /1320/);
+});
+
 test("game screens render swap animation classes", () => {
   const currentGame = createGame(1);
 
