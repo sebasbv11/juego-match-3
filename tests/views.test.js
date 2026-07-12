@@ -4,20 +4,35 @@ import { createGame } from "../src/gameLogic.js";
 import { renderAuthBar, renderAuthGate } from "../src/auth.js";
 import { renderGame, renderLevels } from "../src/views.js";
 
-test("levels render the pirate map with path, treasure and three nodes", () => {
+test("levels render the pirate map with path, treasure and locked future nodes", () => {
   const html = renderLevels({
-    unlockedLevel: 3,
+    unlockedLevel: 1,
     bestScores: { 1: 900 },
     starsByLevel: { 1: 3 },
     sound: true
   });
 
   assert.match(html, /pirate-level-map/);
+  assert.match(html, /map-cloud/);
   assert.match(html, /sand-path/);
   assert.match(html, /treasure-chest/);
+  assert.match(html, /node-1 current/);
+  assert.match(html, /node-2 locked/);
+  assert.match(html, /node-3 locked/);
+  assert.match(html, /disabled/);
+});
+
+test("completed progress unlocks later map nodes", () => {
+  const html = renderLevels({
+    unlockedLevel: 3,
+    bestScores: {},
+    starsByLevel: {},
+    sound: true
+  });
+
   assert.match(html, /node-1 complete/);
-  assert.match(html, /node-2 current/);
-  assert.match(html, /node-3 unlocked/);
+  assert.match(html, /node-2 complete/);
+  assert.match(html, /node-3 current/);
   assert.doesNotMatch(html, /disabled/);
 });
 
@@ -78,6 +93,52 @@ test("game screens can render the quick info guide", () => {
   assert.match(html, /12 pts/);
 });
 
+test("game screens render swap animation classes", () => {
+  const currentGame = createGame(1);
+
+  const invalidHtml = renderGame({
+    currentGame,
+    selectedCell: null,
+    clearingCells: new Set(),
+    swapAnimation: {
+      type: "invalid",
+      from: { row: 0, col: 0 },
+      to: { row: 0, col: 1 }
+    },
+    message: "Movimiento no valido.",
+    lastCombo: 0,
+    progress: {
+      bestScores: {},
+      starsByLevel: {},
+      sound: true
+    }
+  });
+
+  assert.match(invalidHtml, /swap-invalid/);
+  assert.match(invalidHtml, /--swap-x: 72%/);
+
+  const validHtml = renderGame({
+    currentGame,
+    selectedCell: null,
+    clearingCells: new Set(["0,0"]),
+    swapAnimation: {
+      type: "valid",
+      from: { row: 0, col: 0 },
+      to: { row: 0, col: 1 }
+    },
+    message: "Match.",
+    lastCombo: 0,
+    progress: {
+      bestScores: {},
+      starsByLevel: {},
+      sound: true
+    }
+  });
+
+  assert.match(validHtml, /board board-resolving/);
+  assert.match(validHtml, /match-burst/);
+});
+
 test("lost games render the defeat overlay", () => {
   const currentGame = createGame(1);
   currentGame.status = "lost";
@@ -111,8 +172,9 @@ test("auth gate prompts for Clerk setup when no publishable key is configured", 
   assert.match(html, /CLERK_PUBLISHABLE_KEY/);
 });
 
-test("guest sessions do not render a visible account bar", () => {
-  const html = renderAuthBar({ firstName: "Invitado", isGuest: true });
+test("signed-in users render account controls", () => {
+  const html = renderAuthBar({ firstName: "Adriel" });
 
-  assert.equal(html, "");
+  assert.match(html, /Adriel/);
+  assert.match(html, /data-auth-action="sign-out"/);
 });

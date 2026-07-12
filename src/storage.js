@@ -2,9 +2,9 @@ import { LEVELS } from "./gameLogic.js";
 
 const STORAGE_KEY = "gemquest-progress-v1";
 
-export function loadProgress() {
+export function loadProgress(ownerId = "") {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getProgressStorageKey(ownerId));
     if (!raw) {
       return createDefaultProgress();
     }
@@ -33,6 +33,10 @@ export function createDefaultProgress() {
   };
 }
 
-export function saveProgress(progress) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+export function saveProgress(progress, ownerId = "") {
+  localStorage.setItem(getProgressStorageKey(ownerId), JSON.stringify(progress));
+}
+
+export function getProgressStorageKey(ownerId = "") {
+  return ownerId ? `${STORAGE_KEY}:${ownerId}` : STORAGE_KEY;
 }
