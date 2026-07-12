@@ -17,7 +17,9 @@ GemQuest es un juego web tipo Match-3 en evolucion hacia una version de producci
 ## Experiencia visual
 
 - Las gemas se renderizan con assets PNG transparentes para mantener un estilo uniforme en el tablero.
-- Al arrastrar una gema, la ficha seleccionada aumenta ligeramente de escala y la celda objetivo se resalta.
+- Al arrastrar una gema, la ficha seleccionada aumenta ligeramente de escala, sigue el movimiento del jugador y empuja visualmente a la gema vecina.
+- Los movimientos invalidos tienen retroceso visual; las combinaciones validas usan explosion, desaparicion y caida con rebote suave.
+- El mapa de niveles usa una composicion vertical 9:16 con camino pirata, nodos interactivos, cofre central, nubes animadas y decoracion tropical.
 - Al completar un nivel aparece una interfaz modal de victoria sobre el tablero, con fondo atenuado, animacion de entrada y confetti.
 - Al perder, se mantiene una tarjeta de resultado integrada en el panel lateral para permitir reintentar rapidamente.
 
@@ -73,6 +75,7 @@ npm run build
 .
 |-- index.html
 |-- assets/
+|   |-- fence_sprite.png
 |   `-- gems/
 |       |-- amber.png
 |       |-- black.png
@@ -82,7 +85,9 @@ npm run build
 |       `-- violet.png
 |-- src/
 |   |-- app.js
+|   |-- auth.js
 |   |-- gameLogic.js
+|   |-- storage.js
 |   `-- styles.css
 |-- tests/
 |   `-- gameLogic.test.js
@@ -103,10 +108,25 @@ El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build`
 
 El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<clerk-user-id>`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido para cada cuenta.
 
+## Cambios recientes del chat
+
+| Commit | Responsable | Resumen |
+| --- | --- | --- |
+| `157f420` | Adriel Sanchez | Implementacion del mapa interactivo de niveles con tematica pirata: camino vertical 9:16, nodos de estado, cofre central, decoracion tropical y bloqueo/desbloqueo de niveles. |
+| `674e32f` | Adriel Sanchez | Efectos de arrastre tipo Candy Crush, retroceso para movimientos invalidos, explosion/caida para combinaciones, autenticacion Clerk obligatoria, progreso por usuario, `.env.example`, servidor preparado para hosting y sprite de obstaculo de madera. |
+
 ## Bitacora de cambios
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
+| 2026-07-11 | Adriel Sanchez | Se agrando el mapa de niveles, se alinearon sus controles, se agregaron nubes animadas, brillo del camino, pulso de nodos y destello del cofre para hacerlo mas interactivo. |
+| 2026-07-11 | Adriel Sanchez | Se hizo mas discreta la barra de cuenta autenticada, reduciendo tamano, sombra y opacidad, y dejandola fija en la esquina superior derecha. |
+| 2026-07-11 | Adriel Sanchez | Se dejo Clerk como requisito de producto final: sin `CLERK_PUBLISHABLE_KEY` la app bloquea el acceso, y cada cuenta guarda progreso con una clave propia basada en el usuario de Clerk. |
+| 2026-07-11 | Adriel Sanchez | Se agrego `.env.example`, se documento la configuracion de Clerk para local/produccion y se cambio el servidor para escuchar en `0.0.0.0` cuando se despliega. |
+| 2026-07-11 | Adriel Sanchez | Se implementaron animaciones de arrastre para gemas: seleccion con brillo, seguimiento suavizado, empuje de gema vecina, retroceso en movimiento invalido y caida con rebote en movimientos validos. |
+| 2026-07-11 | Adriel Sanchez | Se reemplazo el obstaculo generico del nivel 3 por `assets/fence_sprite.png`, mostrando bloques de madera dentro del tablero. |
+| 2026-07-11 | Adriel Sanchez | Se ajustaron los botones de `Inicio` y `Reiniciar progreso` al estilo secundario del juego, y se restauro el bloqueo real de niveles hasta completar el nivel anterior. |
+| 2026-07-11 | Adriel Sanchez | Se creo el mapa de niveles pirata con camino sinuoso, tres nodos interactivos, cofre central, palmeras, barriles, rocas con calavera, cuerdas y estados visuales de nivel. |
 | 2026-07-09 | Sebastian | Se agrego una pantalla de derrota dedicada con estilo triste, resumen de puntaje/progreso, botones de reintento y mapa, y el sprite `assets/pirata_sprite.png` como personaje derrotado. |
 | 2026-07-09 | Sebastian | Se reemplazo el pirata dibujado con CSS por el sprite `assets/pirata.png` en la pantalla de victoria, manteniendo la animacion de entrada del personaje. |
 | 2026-07-08 | Sebastian | Se mejoro la guia rapida con contraste correcto para la paleta navy/dorado, pasos numerados y tarjetas de gemas legibles con nombre y puntos. |
