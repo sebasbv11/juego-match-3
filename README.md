@@ -115,6 +115,13 @@ El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<cle
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
+| 2026-07-12 | Jostin Romero | Se configuro GemQuest como PWA instalable para moviles: se agregaron `manifest.webmanifest`, `sw.js`, metadatos para iOS/Android, modo `fullscreen`, orientacion horizontal, icono de instalacion y cache offline de los assets locales del juego. |
+| 2026-07-12 | Jostin Romero | Se adapto la entrada tactil movil con `touchstart`, `touchmove` y `touchend`, evitando scroll accidental con `touch-action: none` y haciendo que la gema seleccionada siga el dedo durante el arrastre. |
+| 2026-07-12 | Jostin Romero | Se optimizo el arrastre en moviles usando `requestAnimationFrame` para reducir trabajo durante `touchmove` y mejorar la sensacion de fluidez en dispositivos de menor rendimiento. |
+| 2026-07-12 | Jostin Romero | Se corrigio la experiencia responsive de PWA en movil: mapa de niveles compacto, sprites visibles en victoria/derrota, overlays sin scroll, fondo opaco y bloqueo real de desplazamiento con la clase `overlay-locked`. |
+| 2026-07-12 | Jostin Romero | Se ajusto la pantalla de victoria movil para integrar mejor el sprite del pirata, reduciendo el tamano de los botones y aumentando ligeramente el personaje para mantener una composicion mas limpia. |
+| 2026-07-12 | Jostin Romero | Se restauró la jugabilidad de escritorio con `pointerdown`, `pointermove` y `pointerup` solo para mouse/lapiz, manteniendo en PC el arrastre visual tipo Candy Crush sin afectar los controles tactiles moviles. |
+| 2026-07-12 | Jostin Romero | Se reactivaron las animaciones del mapa de niveles en movil, incluyendo nubes, brillo del camino, nodos flotantes, cofre y estrellas, conservando apagadas las animaciones pesadas de los overlays. |
 | 2026-07-12 | Sebastian | Se agrego `.dockerignore` para optimizar el contexto Docker y evitar copiar archivos innecesarios como `.git`, `.github`, `.vscode`, `docs`, `tests`, `.env`, documentacion y assets fuente no usados. |
 | 2026-07-12 | Sebastian | Se procesaron `assets/Estrella.png` y `assets/Tesoro sprite.jpg` para generar versiones PNG con fondo transparente: `assets/estrella_transparente.png` y `assets/tesoro_transparente.png`. |
 | 2026-07-12 | Sebastian | Se actualizo el cofre del mapa: queda cerrado/bloqueado mientras falte completar algun nivel y se abre con estrellas animadas y mensaje de recompensa al completar los 3 niveles. |

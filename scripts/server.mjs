@@ -14,6 +14,7 @@ const contentTypes = new Map([
   [".js", "text/javascript; charset=utf-8"],
   [".mjs", "text/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
+  [".webmanifest", "application/manifest+json; charset=utf-8"],
   [".md", "text/markdown; charset=utf-8"],
   [".png", "image/png"],
   [".wav", "audio/wav"]
@@ -108,7 +109,7 @@ function listenWithFallback(currentPort, attemptsLeft = 10) {
   });
 
   server.listen(currentPort, host, () => {
-    console.log(`GemQuest MVP running at http://${host}:${currentPort}`);
+    console.log(`GemQuest MVP running at http://localhost:${currentPort}`);
   });
 }
 

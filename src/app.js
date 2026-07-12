@@ -21,6 +21,8 @@ let swapAnimation = null;
 let swapAnimationTimer = null;
 let lastCombo = 0;
 let dragCell = null;
+let dragFrame = null;
+let pendingDragPoint = null;
 let suppressClick = false;
 let infoOpen = false;
 
@@ -55,6 +57,78 @@ app.addEventListener("click", (event) => {
 });
 
 app.addEventListener("pointerdown", (event) => {
+  if (!isDesktopPointer(event) || auth.state.status !== "signed-in") {
+    return;
+  }
+
+  const cellTarget = getCellTarget(event);
+  if (!cellTarget || cellTarget.disabled || !currentGame || currentGame.status !== "playing") {
+    return;
+  }
+
+  event.preventDefault();
+  ensureBackgroundMusic(progress.sound);
+  dragCell = {
+    row: Number(cellTarget.dataset.row),
+    col: Number(cellTarget.dataset.col),
+    startX: event.clientX,
+    startY: event.clientY,
+    pointerId: event.pointerId,
+    moved: false
+  };
+  cellTarget.setPointerCapture?.(event.pointerId);
+  cellTarget.classList.add("dragging");
+});
+
+app.addEventListener("pointermove", (event) => {
+  if (!isDesktopPointer(event) || auth.state.status !== "signed-in" || !dragCell) {
+    return;
+  }
+
+  if (event.pointerId !== dragCell.pointerId) {
+    return;
+  }
+
+  event.preventDefault();
+  updateDragVisual(event);
+});
+
+app.addEventListener("pointerup", (event) => {
+  if (!isDesktopPointer(event) || auth.state.status !== "signed-in" || !dragCell) {
+    return;
+  }
+
+  if (event.pointerId !== dragCell.pointerId) {
+    return;
+  }
+
+  const from = dragCell;
+  const cellTarget = getCellAt(event.clientX, event.clientY);
+  const to = dragCell.moved && (dragCell.target ?? (cellTarget
+    ? { row: Number(cellTarget.dataset.row), col: Number(cellTarget.dataset.col) }
+    : null));
+
+  event.preventDefault();
+  clearDragClasses();
+  dragCell = null;
+  suppressClick = from.moved;
+
+  if (to && areAdjacent(from, to)) {
+    suppressClick = true;
+    performSwap(from, to);
+  }
+});
+
+app.addEventListener("pointercancel", (event) => {
+  if (!isDesktopPointer(event)) {
+    return;
+  }
+
+  dragCell = null;
+  clearDragClasses();
+});
+
+app.addEventListener("touchstart", (event) => {
   if (auth.state.status !== "signed-in") {
     return;
   }
@@ -64,25 +138,44 @@ app.addEventListener("pointerdown", (event) => {
     return;
   }
 
+  const touch = event.changedTouches[0];
+  event.preventDefault();
+  ensureBackgroundMusic(progress.sound);
   dragCell = {
     row: Number(cellTarget.dataset.row),
     col: Number(cellTarget.dataset.col),
-    startX: event.clientX,
-    startY: event.clientY
+    startX: touch.clientX,
+    startY: touch.clientY,
+    touchId: touch.identifier,
+    moved: false
   };
-  cellTarget.setPointerCapture?.(event.pointerId);
   cellTarget.classList.add("dragging");
-});
+}, { passive: false });
 
-app.addEventListener("pointermove", (event) => {
+app.addEventListener("touchmove", (event) => {
   if (auth.state.status !== "signed-in" || !dragCell) {
     return;
   }
 
-  updateDragVisual(event);
-});
+  const touch = getTrackedTouch(event.touches);
+  if (!touch) {
+    return;
+  }
 
-app.addEventListener("pointerover", (event) => {
+  event.preventDefault();
+  pendingDragPoint = { clientX: touch.clientX, clientY: touch.clientY };
+  if (!dragFrame) {
+    dragFrame = requestAnimationFrame(() => {
+      dragFrame = null;
+      if (dragCell && pendingDragPoint) {
+        updateDragVisual(pendingDragPoint);
+      }
+      pendingDragPoint = null;
+    });
+  }
+}, { passive: false });
+
+app.addEventListener("touchend", (event) => {
   if (auth.state.status !== "signed-in") {
     return;
   }
@@ -91,52 +184,44 @@ app.addEventListener("pointerover", (event) => {
     return;
   }
 
-  app.querySelectorAll(".drop-target").forEach((item) => item.classList.remove("drop-target"));
-  const cellTarget = getCellTarget(event);
-  if (!cellTarget || cellTarget.disabled) {
-    return;
-  }
-
-  const hoverCell = {
-    row: Number(cellTarget.dataset.row),
-    col: Number(cellTarget.dataset.col)
-  };
-  if (areAdjacent(dragCell, hoverCell)) {
-    cellTarget.classList.add("drop-target");
-  }
-});
-
-app.addEventListener("pointerup", (event) => {
-  if (auth.state.status !== "signed-in") {
-    return;
-  }
-
-  if (!dragCell) {
-    return;
-  }
-
+  const touch = getTrackedTouch(event.changedTouches);
   const from = dragCell;
-  const cellTarget = getCellTarget(event);
-  const to = dragCell.target ?? (cellTarget
+  const cellTarget = touch ? getCellAt(touch.clientX, touch.clientY) : null;
+  const to = dragCell.moved && (dragCell.target ?? (cellTarget
     ? { row: Number(cellTarget.dataset.row), col: Number(cellTarget.dataset.col) }
-    : null);
+    : null));
 
+  event.preventDefault();
   clearDragClasses();
   dragCell = null;
+  pendingDragPoint = null;
+  if (dragFrame) {
+    cancelAnimationFrame(dragFrame);
+    dragFrame = null;
+  }
+  suppressClick = true;
 
   if (to && areAdjacent(from, to)) {
-    suppressClick = true;
     performSwap(from, to);
+    return;
   }
-});
 
-app.addEventListener("pointercancel", () => {
+  handleCellClick(from.row, from.col);
+}, { passive: false });
+
+app.addEventListener("touchcancel", () => {
   dragCell = null;
+  pendingDragPoint = null;
+  if (dragFrame) {
+    cancelAnimationFrame(dragFrame);
+    dragFrame = null;
+  }
   clearDragClasses();
 });
 
 render();
 auth.init();
+lockLandscapeOrientation();
 
 function handleAuthAction(action) {
   if (action === "sign-in") {
@@ -404,6 +489,7 @@ function completeLevel() {
 
 function render() {
   if (auth.state.status !== "signed-in") {
+    setOverlayLock(false);
     app.innerHTML = renderAuthGate(auth.state);
     return;
   }
@@ -423,6 +509,7 @@ function render() {
   }
 
   app.innerHTML = html;
+  setOverlayLock(screen === "game" && currentGame && currentGame.status !== "playing");
   auth.mountUserButton(document.querySelector("#clerk-user-button"));
   auth.mountActiveForm(document.querySelector("#clerk-auth-mount"));
 }
@@ -469,8 +556,25 @@ function getProgressOwnerId(user) {
   return user?.id || user?.primaryEmailAddress?.emailAddress || user?.username || "";
 }
 
+function setOverlayLock(isLocked) {
+  document.documentElement.classList.toggle("overlay-locked", isLocked);
+  document.body.classList.toggle("overlay-locked", isLocked);
+}
+
+function isDesktopPointer(event) {
+  return (event.pointerType === "mouse" || event.pointerType === "pen") && event.button !== 2;
+}
+
 function getCellTarget(event) {
   return event.target.closest("[data-cell]");
+}
+
+function getCellAt(x, y) {
+  return document.elementFromPoint(x, y)?.closest("[data-cell]");
+}
+
+function getTrackedTouch(touches) {
+  return Array.from(touches).find((touch) => touch.identifier === dragCell?.touchId);
 }
 
 function clearDragClasses() {
@@ -494,13 +598,16 @@ function updateDragVisual(event) {
   const rect = origin.getBoundingClientRect();
   const rawX = event.clientX - dragCell.startX;
   const rawY = event.clientY - dragCell.startY;
+  dragCell.moved = Math.hypot(rawX, rawY) > 14;
   const horizontal = Math.abs(rawX) >= Math.abs(rawY);
   const limit = horizontal ? rect.width : rect.height;
   const dragX = horizontal ? clamp(rawX, -limit, limit) * 0.78 : 0;
   const dragY = horizontal ? 0 : clamp(rawY, -limit, limit) * 0.78;
-  const direction = horizontal
-    ? { row: 0, col: Math.sign(dragX) }
-    : { row: Math.sign(dragY), col: 0 };
+  const direction = !dragCell.moved
+    ? { row: 0, col: 0 }
+    : horizontal
+      ? { row: 0, col: Math.sign(dragX) }
+      : { row: Math.sign(dragY), col: 0 };
   const target = direction.row || direction.col
     ? app.querySelector(`[data-row="${dragCell.row + direction.row}"][data-col="${dragCell.col + direction.col}"]`)
     : null;
@@ -539,4 +646,10 @@ function updateDragVisual(event) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
+}
+
+function lockLandscapeOrientation() {
+  window.screen.orientation?.lock?.("landscape").catch(() => {
+    // Manifest handles installed PWAs; unsupported browsers can ignore this.
+  });
 }
