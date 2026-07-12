@@ -30,6 +30,11 @@ export function createAuthController({ onChange } = {}) {
       syncState();
       state.clerk.addListener(syncState);
     } catch (error) {
+      if (!navigator.onLine) {
+        enterOfflineMode();
+        return;
+      }
+
       state.status = "error";
       state.error = error instanceof Error ? error.message : "No se pudo iniciar Clerk.";
     } finally {
@@ -52,6 +57,13 @@ export function createAuthController({ onChange } = {}) {
 
   function signUp() {
     openHostedAuth("sign-up");
+  }
+
+  function enterOfflineMode() {
+    state.user = { username: "Invitado offline" };
+    state.status = "signed-in";
+    state.clerk = null;
+    state.activeForm = null;
   }
 
   async function signOut() {
