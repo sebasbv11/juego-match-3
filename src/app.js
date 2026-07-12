@@ -8,7 +8,8 @@ import { renderGame, renderHome, renderLevels } from "./views.js";
 const app = document.querySelector("#app");
 const auth = createAuthController({ onChange: render });
 
-let progress = loadProgress();
+let progress = createDefaultProgress();
+let progressOwnerId = "";
 let screen = "home";
 let currentGame = null;
 let selectedCell = null;
@@ -16,6 +17,8 @@ let message = "";
 let completionSaved = false;
 let clearingCells = new Set();
 let animationTimer = null;
+let swapAnimation = null;
+let swapAnimationTimer = null;
 let lastCombo = 0;
 let dragCell = null;
 let suppressClick = false;
@@ -63,9 +66,20 @@ app.addEventListener("pointerdown", (event) => {
 
   dragCell = {
     row: Number(cellTarget.dataset.row),
-    col: Number(cellTarget.dataset.col)
+    col: Number(cellTarget.dataset.col),
+    startX: event.clientX,
+    startY: event.clientY
   };
+  cellTarget.setPointerCapture?.(event.pointerId);
   cellTarget.classList.add("dragging");
+});
+
+app.addEventListener("pointermove", (event) => {
+  if (auth.state.status !== "signed-in" || !dragCell) {
+    return;
+  }
+
+  updateDragVisual(event);
 });
 
 app.addEventListener("pointerover", (event) => {
@@ -103,9 +117,9 @@ app.addEventListener("pointerup", (event) => {
 
   const from = dragCell;
   const cellTarget = getCellTarget(event);
-  const to = cellTarget
+  const to = dragCell.target ?? (cellTarget
     ? { row: Number(cellTarget.dataset.row), col: Number(cellTarget.dataset.col) }
-    : null;
+    : null);
 
   clearDragClasses();
   dragCell = null;
@@ -166,14 +180,14 @@ function handleAction(action, data) {
 
   if (action === "toggle-sound") {
     progress.sound = !progress.sound;
-    saveProgress(progress);
+    saveCurrentProgress();
     updateBackgroundMusic(progress.sound);
     render();
   }
 
   if (action === "reset-progress") {
     progress = createDefaultProgress();
-    saveProgress(progress);
+    saveCurrentProgress();
     showLevels();
   }
 
@@ -204,6 +218,7 @@ function clearActiveGame() {
   currentGame = null;
   selectedCell = null;
   clearingCells = new Set();
+  swapAnimation = null;
   lastCombo = 0;
 }
 
@@ -217,6 +232,7 @@ function startLevel(levelId) {
   screen = "game";
   selectedCell = null;
   clearingCells = new Set();
+  swapAnimation = null;
   completionSaved = false;
   lastCombo = 0;
   message = "Selecciona una gema y luego una adyacente.";
@@ -270,6 +286,9 @@ function performSwap(from, to) {
 
   const result = currentGame.swap(from, to);
   selectedCell = null;
+  swapAnimation = to && areAdjacent(from, to)
+    ? { type: result.accepted ? "valid" : "invalid", from, to }
+    : null;
   applyMoveResult(result);
   render();
 }
@@ -290,6 +309,7 @@ function applyMoveResult(result) {
   message = moveErrorMessage(result.reason);
   playTone(progress.sound, 140, 0.1);
   finishIfNeeded();
+  scheduleSwapAnimationClear();
 }
 
 function finishIfNeeded() {
@@ -320,14 +340,32 @@ function scheduleClearAnimation() {
   if (animationTimer) {
     clearTimeout(animationTimer);
   }
+  if (swapAnimationTimer) {
+    clearTimeout(swapAnimationTimer);
+  }
 
   animationTimer = setTimeout(() => {
     clearingCells = new Set();
+    swapAnimation = null;
     animationTimer = null;
     if (screen === "game") {
       render();
     }
   }, 520);
+}
+
+function scheduleSwapAnimationClear() {
+  if (swapAnimationTimer) {
+    clearTimeout(swapAnimationTimer);
+  }
+
+  swapAnimationTimer = setTimeout(() => {
+    swapAnimation = null;
+    swapAnimationTimer = null;
+    if (screen === "game") {
+      render();
+    }
+  }, 280);
 }
 
 function completeLevel() {
@@ -361,7 +399,7 @@ function completeLevel() {
     playTone(progress.sound, 100, 0.14);
   }
 
-  saveProgress(progress);
+  saveCurrentProgress();
 }
 
 function render() {
@@ -369,6 +407,8 @@ function render() {
     app.innerHTML = renderAuthGate(auth.state);
     return;
   }
+
+  syncProgressForUser();
 
   let html = renderAuthBar(auth.state.user);
 
@@ -397,6 +437,7 @@ function renderGameScreen() {
     currentGame,
     selectedCell,
     clearingCells,
+    swapAnimation,
     message,
     lastCombo,
     progress,
@@ -408,12 +449,94 @@ function positionKey({ row, col }) {
   return `${row},${col}`;
 }
 
+function syncProgressForUser() {
+  const nextOwnerId = getProgressOwnerId(auth.state.user);
+  if (nextOwnerId === progressOwnerId) {
+    return;
+  }
+
+  progressOwnerId = nextOwnerId;
+  progress = loadProgress(progressOwnerId);
+  clearActiveGame();
+  screen = "home";
+}
+
+function saveCurrentProgress() {
+  saveProgress(progress, progressOwnerId);
+}
+
+function getProgressOwnerId(user) {
+  return user?.id || user?.primaryEmailAddress?.emailAddress || user?.username || "";
+}
+
 function getCellTarget(event) {
   return event.target.closest("[data-cell]");
 }
 
 function clearDragClasses() {
-  app.querySelectorAll(".dragging, .drop-target").forEach((item) => {
-    item.classList.remove("dragging", "drop-target");
+  app.querySelectorAll(".dragging, .drop-target, .push-line").forEach((item) => {
+    item.classList.remove("dragging", "drop-target", "push-line");
+    item.style.removeProperty("--drag-x");
+    item.style.removeProperty("--drag-y");
+    item.style.removeProperty("--push-x");
+    item.style.removeProperty("--push-y");
+    item.style.removeProperty("--nudge-x");
+    item.style.removeProperty("--nudge-y");
   });
+}
+
+function updateDragVisual(event) {
+  const origin = app.querySelector(`[data-row="${dragCell.row}"][data-col="${dragCell.col}"]`);
+  if (!origin) {
+    return;
+  }
+
+  const rect = origin.getBoundingClientRect();
+  const rawX = event.clientX - dragCell.startX;
+  const rawY = event.clientY - dragCell.startY;
+  const horizontal = Math.abs(rawX) >= Math.abs(rawY);
+  const limit = horizontal ? rect.width : rect.height;
+  const dragX = horizontal ? clamp(rawX, -limit, limit) * 0.78 : 0;
+  const dragY = horizontal ? 0 : clamp(rawY, -limit, limit) * 0.78;
+  const direction = horizontal
+    ? { row: 0, col: Math.sign(dragX) }
+    : { row: Math.sign(dragY), col: 0 };
+  const target = direction.row || direction.col
+    ? app.querySelector(`[data-row="${dragCell.row + direction.row}"][data-col="${dragCell.col + direction.col}"]`)
+    : null;
+
+  clearDragClasses();
+  origin.classList.add("dragging");
+  origin.style.setProperty("--drag-x", `${dragX}px`);
+  origin.style.setProperty("--drag-y", `${dragY}px`);
+
+  if (!target || target.disabled) {
+    dragCell.target = null;
+    return;
+  }
+
+  dragCell.target = {
+    row: Number(target.dataset.row),
+    col: Number(target.dataset.col)
+  };
+  target.classList.add("drop-target");
+  target.style.setProperty("--push-x", `${-dragX * 0.68}px`);
+  target.style.setProperty("--push-y", `${-dragY * 0.68}px`);
+
+  app.querySelectorAll("[data-cell]").forEach((cell) => {
+    const sameLine = horizontal
+      ? Number(cell.dataset.row) === dragCell.row
+      : Number(cell.dataset.col) === dragCell.col;
+    if (!sameLine || cell === origin || cell === target || cell.disabled) {
+      return;
+    }
+
+    cell.classList.add("push-line");
+    cell.style.setProperty("--nudge-x", `${dragX * 0.1}px`);
+    cell.style.setProperty("--nudge-y", `${dragY * 0.1}px`);
+  });
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }

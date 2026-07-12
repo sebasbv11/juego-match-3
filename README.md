@@ -1,13 +1,13 @@
 # GemQuest
 
-GemQuest es un juego web tipo Match-3 en evolucion hacia una version de produccion para el Grupo B. El producto incluye tablero valido, intercambio de gemas adyacentes, deteccion de combinaciones, gravedad, recarga, puntuacion, movimientos limitados, niveles, progreso local, assets visuales personalizados y pantallas de resultado.
+GemQuest es un juego web tipo Match-3 en evolucion hacia una version de produccion para el Grupo B. El producto incluye tablero valido, intercambio de gemas adyacentes, deteccion de combinaciones, gravedad, recarga, puntuacion, movimientos limitados, niveles, autenticacion con Clerk, progreso por usuario, assets visuales personalizados y pantallas de resultado.
 
 ## Funcionalidades principales
 
 - HU-01 a HU-06: tablero jugable, combinaciones, eliminacion, gravedad y nuevas fichas.
 - HU-07 a HU-09: puntuacion, movimientos limitados y objetivos por nivel.
-- HU-10 a HU-14: inicio, seleccion de nivel, victoria, derrota y persistencia de progreso.
-- HU-15: mejor puntuacion por nivel guardada en `localStorage`.
+- HU-10 a HU-14: inicio, seleccion de nivel, victoria, derrota y persistencia de progreso por cuenta.
+- HU-15: mejor puntuacion por nivel guardada por usuario autenticado.
 - HU-16/HU-17: fichas con siluetas distintas, animacion al eliminar combinaciones y sonido basico generado en el navegador.
 - Interaccion por clic o arrastre: el jugador puede seleccionar gemas con clic o arrastrar una gema hacia una celda adyacente.
 - Set visual personalizado de gemas en `assets/gems/`, con imagenes PNG uniformes para los seis tipos de ficha.
@@ -38,13 +38,22 @@ npm start
 
 Abrir `http://127.0.0.1:4173`.
 
-Para habilitar Clerk, crea una aplicacion en `https://dashboard.clerk.com`, copia la publishable key y define:
+## Autenticacion con Clerk
+
+Clerk es obligatorio para ejecutar GemQuest como producto final. Sin `CLERK_PUBLISHABLE_KEY`, la app muestra una pantalla de configuracion y no permite jugar.
+
+1. Crea una aplicacion en `https://dashboard.clerk.com`.
+2. Copia la publishable key del proyecto.
+3. Configura los dominios permitidos y URLs de redireccion en Clerk para tu entorno local y produccion.
+4. Crea `.env` a partir de `.env.example`:
 
 ```bash
 CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key
+HOST=0.0.0.0
+PORT=4173
 ```
 
-El servidor solo expone esta llave publica al navegador desde `/clerk-config.json`; no uses `CLERK_SECRET_KEY` en codigo cliente.
+El servidor solo expone esta llave publica al navegador desde `/clerk-config.json`; no uses `CLERK_SECRET_KEY` en codigo cliente. Cada cuenta guarda su progreso en una clave propia de `localStorage` basada en el ID de usuario de Clerk.
 
 ## Pruebas
 
@@ -92,7 +101,7 @@ El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build`
 
 ## Persistencia
 
-El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido.
+El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<clerk-user-id>`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido para cada cuenta.
 
 ## Bitacora de cambios
 

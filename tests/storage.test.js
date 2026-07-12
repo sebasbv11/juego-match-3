@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { LEVELS } from "../src/gameLogic.js";
-import { createDefaultProgress, normalizeProgress } from "../src/storage.js";
+import { createDefaultProgress, getProgressStorageKey, normalizeProgress } from "../src/storage.js";
 
 test("default progress includes stars by level", () => {
   assert.deepEqual(createDefaultProgress(), {
@@ -37,4 +37,9 @@ test("saved progress is clamped to available levels", () => {
 
   assert.equal(progress.unlockedLevel, LEVELS.length);
   assert.equal(progress.sound, false);
+});
+
+test("progress storage can be scoped to a Clerk user", () => {
+  assert.equal(getProgressStorageKey("user_123"), "gemquest-progress-v1:user_123");
+  assert.equal(getProgressStorageKey(), "gemquest-progress-v1");
 });

@@ -20,24 +20,49 @@ export function renderLevels(progress, { infoOpen = false } = {}) {
   return `
     <section class="level-view">
       <header class="screen-header">
-        <button class="quiet-button" data-action="home">Inicio</button>
+        <button class="secondary-button" data-action="home">Inicio</button>
         <div>
           <p class="eyebrow">Seleccion</p>
           <h1>Niveles</h1>
         </div>
       </header>
-      <div class="level-list">
+      <div class="pirate-level-map" aria-label="Mapa pirata de niveles">
+        <span class="map-cloud cloud-one" aria-hidden="true"></span>
+        <span class="map-cloud cloud-two" aria-hidden="true"></span>
+        <span class="map-cloud cloud-three" aria-hidden="true"></span>
+        <svg class="map-path" viewBox="0 0 900 1600" aria-hidden="true" focusable="false">
+          <path class="sand-path" d="M510 0 C210 180 700 325 375 510 C105 665 715 800 455 965 C190 1130 690 1290 340 1600" />
+          <path class="path-rim" d="M510 0 C210 180 700 325 375 510 C105 665 715 800 455 965 C190 1130 690 1290 340 1600" />
+        </svg>
+        <span class="map-decor palm palm-left" aria-hidden="true"></span>
+        <span class="map-decor palm palm-right" aria-hidden="true"></span>
+        <span class="map-decor barrel barrel-left" aria-hidden="true"></span>
+        <span class="map-decor barrel barrel-right" aria-hidden="true"></span>
+        <span class="map-decor skull-rock rock-left" aria-hidden="true"></span>
+        <span class="map-decor skull-rock rock-right" aria-hidden="true"></span>
+        <span class="map-decor rope rope-left" aria-hidden="true"></span>
+        <span class="map-decor rope rope-right" aria-hidden="true"></span>
+        <span class="treasure-chest" aria-hidden="true"><i></i></span>
         ${LEVELS.map((level) => renderLevelButton(level, progress)).join("")}
       </div>
       <div class="footer-actions">
-        <button class="quiet-button" data-action="reset-progress">Reiniciar progreso</button>
+        <button class="secondary-button" data-action="reset-progress">Reiniciar progreso</button>
       </div>
     </section>
     ${renderInfoHelp(infoOpen)}
   `;
 }
 
-export function renderGame({ currentGame, selectedCell, clearingCells, message, lastCombo, progress, infoOpen = false }) {
+export function renderGame({
+  currentGame,
+  selectedCell,
+  clearingCells,
+  swapAnimation = null,
+  message,
+  lastCombo,
+  progress,
+  infoOpen = false
+}) {
   const progressData = getObjectiveProgress(currentGame);
   const progressPercent = Math.round((progressData.current / progressData.target) * 100);
   const bestScore = progress.bestScores[currentGame.level.id] ?? 0;
@@ -82,11 +107,11 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
       <section class="play-layout">
         <div class="board-panel">
           <div
-            class="board"
+            class="board ${swapAnimation?.type === "valid" ? "board-resolving" : ""}"
             style="--rows: ${currentGame.level.rows}; --cols: ${currentGame.level.cols};"
             aria-label="Tablero de gemas"
           >
-            ${renderBoard(currentGame, selectedCell, clearingCells)}
+            ${renderBoard(currentGame, selectedCell, clearingCells, swapAnimation)}
           </div>
         </div>
 
@@ -114,47 +139,38 @@ function renderLevelButton(level, progress) {
   const locked = level.id > progress.unlockedLevel;
   const bestScore = progress.bestScores[level.id] ?? 0;
   const stars = progress.starsByLevel[level.id] ?? 0;
-  const objectiveType = level.objective.type;
-  const stateClass = locked ? "locked" : "unlocked";
+  const mapState = locked ? "locked" : level.id < progress.unlockedLevel ? "complete" : "current";
+  const icon = locked ? "" : mapState === "current" && level.id === 2 ? "" : level.id === 3 ? "2" : "";
+  const stateCopy = locked ? "Bloqueado" : mapState === "complete" ? "Completado" : "Jugar";
   return `
     <button
-      class="level-card ${stateClass} objective-${objectiveType}"
+      class="map-node node-${level.id} ${mapState}"
       data-action="start-level"
       data-level="${level.id}"
-      style="--level-index: ${level.id - 1};"
       ${locked ? "disabled" : ""}
+      aria-label="Nivel ${level.id}: ${level.name}. ${stateCopy}. Record ${bestScore}. Maestria ${stars} de 3"
     >
-      <span class="level-card-glow" aria-hidden="true"></span>
-      <span class="level-card-gems" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </span>
-      <span class="level-card-top">
-        <span class="level-number">Nivel ${level.id}</span>
-        <span class="level-emblem" aria-hidden="true"></span>
-      </span>
-      <strong>${level.name}</strong>
-      <span class="level-objective">${describeObjective(level)}</span>
-      <span class="level-stats">
-        <span>${level.moves} movimientos</span>
-        <span>Record ${bestScore}</span>
-      </span>
-      ${renderStars(stars, `Maestria nivel ${level.id}`)}
-      ${locked ? `<span class="lock-label">Bloqueado</span>` : `<span class="ready-label">Disponible</span>`}
+      <span class="node-ring" aria-hidden="true"></span>
+      <span class="node-icon" aria-hidden="true">${icon}</span>
+      <span class="node-caption">${level.name}</span>
     </button>
   `;
 }
 
-function renderBoard(currentGame, selectedCell, clearingCells) {
+function renderBoard(currentGame, selectedCell, clearingCells, swapAnimation) {
   return currentGame.board
     .flatMap((row, rowIndex) =>
-      row.map((cell, colIndex) => renderCell(currentGame, selectedCell, clearingCells, cell, rowIndex, colIndex))
+      row.map((cell, colIndex) =>
+        renderCell(currentGame, selectedCell, clearingCells, swapAnimation, cell, rowIndex, colIndex)
+      )
     )
     .join("");
 }
 
-function renderCell(currentGame, selectedCell, clearingCells, cell, rowIndex, colIndex) {
+function renderCell(currentGame, selectedCell, clearingCells, swapAnimation, cell, rowIndex, colIndex) {
   const selected = selectedCell && selectedCell.row === rowIndex && selectedCell.col === colIndex;
   const clearing = clearingCells.has(positionKey({ row: rowIndex, col: colIndex }));
+  const swapState = getSwapState(swapAnimation, rowIndex, colIndex);
   const disabled = currentGame.status !== "playing" || cell.blocker;
   const label = cell.blocker
     ? `Obstaculo en fila ${rowIndex + 1}, columna ${colIndex + 1}`
@@ -162,20 +178,53 @@ function renderCell(currentGame, selectedCell, clearingCells, cell, rowIndex, co
 
   return `
     <button
-      class="cell ${selected ? "selected" : ""} ${clearing ? "clearing" : ""} ${cell.blocker ? "blocker" : ""}"
+      class="cell ${selected ? "selected" : ""} ${clearing ? "clearing" : ""} ${swapState.className} ${cell.blocker ? "blocker" : ""}"
       data-cell
       data-row="${rowIndex}"
       data-col="${colIndex}"
       aria-label="${label}"
+      ${swapState.style}
       ${disabled ? "disabled" : ""}
     >
       ${
         cell.blocker
-          ? `<span class="blocker-mark">x</span>`
+          ? `<span class="blocker-mark" aria-hidden="true"></span>`
           : `<span class="gem ${GEM_META[cell.gem].cssClass}" aria-hidden="true"></span>${clearing ? `<span class="match-burst" aria-hidden="true"></span>` : ""}`
       }
     </button>
   `;
+}
+
+function getSwapState(swapAnimation, row, col) {
+  if (swapAnimation?.type !== "invalid") {
+    return { className: "", style: "" };
+  }
+
+  const current = { row, col };
+  const isFrom = samePosition(current, swapAnimation.from);
+  const isTo = samePosition(current, swapAnimation.to);
+  if (!isFrom && !isTo) {
+    return { className: "", style: "" };
+  }
+
+  const direction = isFrom
+    ? {
+        row: swapAnimation.to.row - swapAnimation.from.row,
+        col: swapAnimation.to.col - swapAnimation.from.col
+      }
+    : {
+        row: swapAnimation.from.row - swapAnimation.to.row,
+        col: swapAnimation.from.col - swapAnimation.to.col
+      };
+
+  return {
+    className: "swap-invalid",
+    style: `style="--swap-x: ${direction.col * 72}%; --swap-y: ${direction.row * 72}%"`
+  };
+}
+
+function samePosition(first, second) {
+  return first.row === second.row && first.col === second.col;
 }
 
 function renderVictoryOverlay(currentGame, bestStars) {
