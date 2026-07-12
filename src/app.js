@@ -209,9 +209,6 @@ function clearActiveGame() {
 
 function startLevel(levelId) {
   const level = LEVELS.find((item) => item.id === levelId) ?? LEVELS[0];
-  if (level.id > progress.unlockedLevel) {
-    return;
-  }
 
   currentGame = createGame(level);
   screen = "game";

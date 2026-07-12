@@ -5,6 +5,7 @@ const CLERK_BROWSER_SCRIPTS = [
 ];
 
 const CLERK_UI_SCRIPTS = ["/npm/@clerk/ui@1/dist/ui.browser.js"];
+const GUEST_USER = { firstName: "Invitado", isGuest: true };
 
 export function createAuthController({ onChange } = {}) {
   const state = {
@@ -19,7 +20,7 @@ export function createAuthController({ onChange } = {}) {
     try {
       const publishableKey = await loadPublishableKey();
       if (!publishableKey) {
-        state.status = "setup-required";
+        useGuestSession();
         onChange?.();
         return;
       }
@@ -55,8 +56,20 @@ export function createAuthController({ onChange } = {}) {
   }
 
   async function signOut() {
+    if (!state.clerk) {
+      useGuestSession();
+      onChange?.();
+      return;
+    }
+
     await state.clerk?.signOut();
     syncState();
+  }
+
+  function useGuestSession() {
+    state.status = "signed-in";
+    state.user = GUEST_USER;
+    state.activeForm = null;
   }
 
   function mountUserButton(target) {
@@ -207,6 +220,10 @@ export function renderAuthGate({ status, error }) {
 }
 
 export function renderAuthBar(user) {
+  if (user?.isGuest) {
+    return "";
+  }
+
   const name = user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress || "Jugador";
   return `
     <aside class="auth-bar" aria-label="Cuenta">

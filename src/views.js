@@ -26,7 +26,20 @@ export function renderLevels(progress, { infoOpen = false } = {}) {
           <h1>Niveles</h1>
         </div>
       </header>
-      <div class="level-list">
+      <div class="pirate-level-map" aria-label="Mapa pirata de niveles">
+        <svg class="map-path" viewBox="0 0 900 1600" aria-hidden="true" focusable="false">
+          <path class="sand-path" d="M510 0 C210 180 700 325 375 510 C105 665 715 800 455 965 C190 1130 690 1290 340 1600" />
+          <path class="path-rim" d="M510 0 C210 180 700 325 375 510 C105 665 715 800 455 965 C190 1130 690 1290 340 1600" />
+        </svg>
+        <span class="map-decor palm palm-left" aria-hidden="true"></span>
+        <span class="map-decor palm palm-right" aria-hidden="true"></span>
+        <span class="map-decor barrel barrel-left" aria-hidden="true"></span>
+        <span class="map-decor barrel barrel-right" aria-hidden="true"></span>
+        <span class="map-decor skull-rock rock-left" aria-hidden="true"></span>
+        <span class="map-decor skull-rock rock-right" aria-hidden="true"></span>
+        <span class="map-decor rope rope-left" aria-hidden="true"></span>
+        <span class="map-decor rope rope-right" aria-hidden="true"></span>
+        <span class="treasure-chest" aria-hidden="true"><i></i></span>
         ${LEVELS.map((level) => renderLevelButton(level, progress)).join("")}
       </div>
       <div class="footer-actions">
@@ -111,35 +124,21 @@ export function renderGame({ currentGame, selectedCell, clearingCells, message, 
 }
 
 function renderLevelButton(level, progress) {
-  const locked = level.id > progress.unlockedLevel;
   const bestScore = progress.bestScores[level.id] ?? 0;
   const stars = progress.starsByLevel[level.id] ?? 0;
-  const objectiveType = level.objective.type;
-  const stateClass = locked ? "locked" : "unlocked";
+  const mapState = level.id === 1 ? "complete" : level.id === 2 ? "current" : "unlocked";
+  const icon = level.id === 1 ? "" : level.id === 2 ? "" : "2";
+  const stateCopy = level.id === 1 ? "Completado" : level.id === 2 ? "Jugar" : "Desbloqueado";
   return `
     <button
-      class="level-card ${stateClass} objective-${objectiveType}"
+      class="map-node node-${level.id} ${mapState}"
       data-action="start-level"
       data-level="${level.id}"
-      style="--level-index: ${level.id - 1};"
-      ${locked ? "disabled" : ""}
+      aria-label="Nivel ${level.id}: ${level.name}. ${stateCopy}. Record ${bestScore}. Maestria ${stars} de 3"
     >
-      <span class="level-card-glow" aria-hidden="true"></span>
-      <span class="level-card-gems" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </span>
-      <span class="level-card-top">
-        <span class="level-number">Nivel ${level.id}</span>
-        <span class="level-emblem" aria-hidden="true"></span>
-      </span>
-      <strong>${level.name}</strong>
-      <span class="level-objective">${describeObjective(level)}</span>
-      <span class="level-stats">
-        <span>${level.moves} movimientos</span>
-        <span>Record ${bestScore}</span>
-      </span>
-      ${renderStars(stars, `Maestria nivel ${level.id}`)}
-      ${locked ? `<span class="lock-label">Bloqueado</span>` : `<span class="ready-label">Disponible</span>`}
+      <span class="node-ring" aria-hidden="true"></span>
+      <span class="node-icon" aria-hidden="true">${icon}</span>
+      <span class="node-caption">${level.name}</span>
     </button>
   `;
 }

@@ -1,8 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createGame } from "../src/gameLogic.js";
-import { renderAuthGate } from "../src/auth.js";
-import { renderGame } from "../src/views.js";
+import { renderAuthBar, renderAuthGate } from "../src/auth.js";
+import { renderGame, renderLevels } from "../src/views.js";
+
+test("levels render the pirate map with path, treasure and three nodes", () => {
+  const html = renderLevels({
+    unlockedLevel: 3,
+    bestScores: { 1: 900 },
+    starsByLevel: { 1: 3 },
+    sound: true
+  });
+
+  assert.match(html, /pirate-level-map/);
+  assert.match(html, /sand-path/);
+  assert.match(html, /treasure-chest/);
+  assert.match(html, /node-1 complete/);
+  assert.match(html, /node-2 current/);
+  assert.match(html, /node-3 unlocked/);
+  assert.doesNotMatch(html, /disabled/);
+});
 
 test("won games render the animated victory overlay", () => {
   const currentGame = createGame(1);
@@ -92,4 +109,10 @@ test("auth gate prompts for Clerk setup when no publishable key is configured", 
 
   assert.match(html, /Configura tu llave publica/);
   assert.match(html, /CLERK_PUBLISHABLE_KEY/);
+});
+
+test("guest sessions do not render a visible account bar", () => {
+  const html = renderAuthBar({ firstName: "Invitado", isGuest: true });
+
+  assert.equal(html, "");
 });
