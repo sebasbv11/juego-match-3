@@ -20,6 +20,7 @@ GemQuest es un juego web tipo Match-3 en evolucion hacia una version de producci
 - Al arrastrar una gema, la ficha seleccionada aumenta ligeramente de escala, sigue el movimiento del jugador y empuja visualmente a la gema vecina.
 - Los movimientos invalidos tienen retroceso visual; las combinaciones validas usan explosion, desaparicion y caida con rebote suave.
 - El mapa de niveles usa una composicion vertical 9:16 con camino pirata, nodos interactivos, cofre central, nubes animadas y decoracion tropical.
+- El cofre del mapa permanece cerrado y bloqueado mientras falte completar algun nivel. Al completar los 3 niveles, se abre con estrellas animadas y muestra una recompensa de monedas, gemas y estrellas.
 - Al completar un nivel aparece una interfaz modal de victoria sobre el tablero, con fondo atenuado, animacion de entrada y confetti.
 - Al perder, se mantiene una tarjeta de resultado integrada en el panel lateral para permitir reintentar rapidamente.
 
@@ -104,6 +105,8 @@ npm run build
 
 El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build` y `npm test` en cada push o pull request.
 
+Tambien incluye `.dockerignore` para excluir del contexto Docker archivos que no son necesarios en la imagen, como documentacion, pruebas, configuracion local, variables de entorno y assets fuente no usados por la app final.
+
 ## Persistencia
 
 El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<clerk-user-id>`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido para cada cuenta.
@@ -112,6 +115,10 @@ El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<cle
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
+| 2026-07-12 | Sebastian | Se agrego `.dockerignore` para optimizar el contexto Docker y evitar copiar archivos innecesarios como `.git`, `.github`, `.vscode`, `docs`, `tests`, `.env`, documentacion y assets fuente no usados. |
+| 2026-07-12 | Sebastian | Se procesaron `assets/Estrella.png` y `assets/Tesoro sprite.jpg` para generar versiones PNG con fondo transparente: `assets/estrella_transparente.png` y `assets/tesoro_transparente.png`. |
+| 2026-07-12 | Sebastian | Se actualizo el cofre del mapa: queda cerrado/bloqueado mientras falte completar algun nivel y se abre con estrellas animadas y mensaje de recompensa al completar los 3 niveles. |
+| 2026-07-12 | Sebastian | Se corrigio el calculo de progreso del mapa para que completar los 3 niveles cuente como 100% aunque no se obtengan 3 estrellas perfectas en cada nivel; el nivel 3 tambien queda marcado como completado despues de ganarlo. |
 | 2026-07-11 | Adriel Sanchez | Se agrando el mapa de niveles, se alinearon sus controles, se agregaron nubes animadas, brillo del camino, pulso de nodos y destello del cofre para hacerlo mas interactivo. |
 | 2026-07-11 | Adriel Sanchez | Se hizo mas discreta la barra de cuenta autenticada, reduciendo tamano, sombra y opacidad, y dejandola fija en la esquina superior derecha. |
 | 2026-07-11 | Adriel Sanchez | Se dejo Clerk como requisito de producto final: sin `CLERK_PUBLISHABLE_KEY` la app bloquea el acceso, y cada cuenta guarda progreso con una clave propia basada en el usuario de Clerk. |

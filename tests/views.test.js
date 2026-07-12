@@ -8,7 +8,7 @@ test("levels render the pirate map with path, treasure and locked future nodes",
   const html = renderLevels({
     unlockedLevel: 1,
     bestScores: { 1: 900 },
-    starsByLevel: { 1: 3 },
+    starsByLevel: {},
     sound: true
   });
 
@@ -34,6 +34,44 @@ test("completed progress unlocks later map nodes", () => {
   assert.match(html, /node-2 complete/);
   assert.match(html, /node-3 current/);
   assert.doesNotMatch(html, /disabled/);
+});
+
+test("completed progress opens the map treasure", () => {
+  const html = renderLevels({
+    unlockedLevel: 3,
+    bestScores: {},
+    starsByLevel: { 1: 1, 2: 2, 3: 1 },
+    sound: true
+  });
+
+  assert.match(html, /treasure-chest open/);
+  assert.match(html, /tesoro_transparente\.png/);
+  assert.match(html, /Tesoro del mapa abierto/);
+  assert.match(html, /estrella_transparente\.png/);
+  assert.match(html, /node-3 complete/);
+});
+
+test("old unlocked progress counts previous levels toward the map treasure", () => {
+  const html = renderLevels({
+    unlockedLevel: 3,
+    bestScores: {},
+    starsByLevel: { 3: 1 },
+    sound: true
+  });
+
+  assert.match(html, /treasure-chest open/);
+});
+
+test("missing level completion keeps the map treasure locked", () => {
+  const html = renderLevels({
+    unlockedLevel: 3,
+    bestScores: {},
+    starsByLevel: { 1: 3, 2: 2 },
+    sound: true
+  });
+
+  assert.match(html, /treasure-chest locked/);
+  assert.doesNotMatch(html, /Tesoro del mapa abierto/);
 });
 
 test("won games render the animated victory overlay", () => {

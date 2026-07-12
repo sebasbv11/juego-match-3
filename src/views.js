@@ -17,6 +17,8 @@ export function renderHome({ infoOpen = false } = {}) {
 }
 
 export function renderLevels(progress, { infoOpen = false } = {}) {
+  const campaignComplete = LEVELS.every((level) => isLevelComplete(level, progress));
+
   return `
     <section class="level-view">
       <header class="screen-header">
@@ -42,9 +44,26 @@ export function renderLevels(progress, { infoOpen = false } = {}) {
         <span class="map-decor skull-rock rock-right" aria-hidden="true"></span>
         <span class="map-decor rope rope-left" aria-hidden="true"></span>
         <span class="map-decor rope rope-right" aria-hidden="true"></span>
-        <span class="treasure-chest" aria-hidden="true"><i></i></span>
+        <span class="treasure-chest ${campaignComplete ? "open" : "locked"}" aria-hidden="true">
+          <span class="closed-chest"><i></i></span>
+          <img class="open-chest" src="./assets/tesoro_transparente.png" alt="" />
+          <span class="chest-stars">
+            <i></i><i></i><i></i>
+          </span>
+        </span>
         ${LEVELS.map((level) => renderLevelButton(level, progress)).join("")}
       </div>
+      ${
+        campaignComplete
+          ? `<div class="final-reward">
+              <img src="./assets/estrella_transparente.png" alt="" aria-hidden="true" />
+              <span>
+                <small>Tesoro del mapa abierto</small>
+                <strong>Recompensa: 150 monedas, gemas y estrellas</strong>
+              </span>
+            </div>`
+          : ""
+      }
       <div class="footer-actions">
         <button class="secondary-button" data-action="reset-progress">Reiniciar progreso</button>
       </div>
@@ -139,7 +158,7 @@ function renderLevelButton(level, progress) {
   const locked = level.id > progress.unlockedLevel;
   const bestScore = progress.bestScores[level.id] ?? 0;
   const stars = progress.starsByLevel[level.id] ?? 0;
-  const mapState = locked ? "locked" : level.id < progress.unlockedLevel ? "complete" : "current";
+  const mapState = locked ? "locked" : isLevelComplete(level, progress) ? "complete" : "current";
   const icon = locked ? "" : mapState === "current" && level.id === 2 ? "" : level.id === 3 ? "2" : "";
   const stateCopy = locked ? "Bloqueado" : mapState === "complete" ? "Completado" : "Jugar";
   return `
@@ -155,6 +174,10 @@ function renderLevelButton(level, progress) {
       <span class="node-caption">${level.name}</span>
     </button>
   `;
+}
+
+function isLevelComplete(level, progress) {
+  return (progress.starsByLevel[level.id] ?? 0) > 0 || level.id < progress.unlockedLevel;
 }
 
 function renderBoard(currentGame, selectedCell, clearingCells, swapAnimation) {
