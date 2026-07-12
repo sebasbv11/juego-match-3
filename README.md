@@ -108,13 +108,6 @@ El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build`
 
 El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<clerk-user-id>`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido para cada cuenta.
 
-## Cambios recientes del chat
-
-| Commit | Responsable | Resumen |
-| --- | --- | --- |
-| `157f420` | Adriel Sanchez | Implementacion del mapa interactivo de niveles con tematica pirata: camino vertical 9:16, nodos de estado, cofre central, decoracion tropical y bloqueo/desbloqueo de niveles. |
-| `674e32f` | Adriel Sanchez | Efectos de arrastre tipo Candy Crush, retroceso para movimientos invalidos, explosion/caida para combinaciones, autenticacion Clerk obligatoria, progreso por usuario, `.env.example`, servidor preparado para hosting y sprite de obstaculo de madera. |
-
 ## Bitacora de cambios
 
 | Fecha | Responsable | Cambios realizados |
