@@ -109,7 +109,7 @@ function listenWithFallback(currentPort, attemptsLeft = 10) {
   });
 
   server.listen(currentPort, host, () => {
-    console.log(`GemQuest MVP running at http://${host}:${currentPort}`);
+    console.log(`GemQuest MVP running at http://localhost:${currentPort}`);
   });
 }
 
