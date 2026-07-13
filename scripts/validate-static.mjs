@@ -9,7 +9,16 @@ await access(path.join(root, "manifest.webmanifest"));
 await access(path.join(root, "sw.js"));
 await access(path.join(root, "src", "styles.css"));
 await access(path.join(root, "src", "app.js"));
+await access(path.join(root, "src", "gameData.js"));
+await access(path.join(root, "src", "gameFunctions.js"));
+await access(path.join(root, "src", "gameState.js"));
 await access(path.join(root, "src", "leaderboard.js"));
+await access(path.join(root, "assets", "gems", "red.png"));
+await access(path.join(root, "assets", "gems", "green.png"));
+await access(path.join(root, "assets", "gems", "blue.png"));
+await access(path.join(root, "assets", "gems", "amber.png"));
+await access(path.join(root, "assets", "gems", "violet.png"));
+await access(path.join(root, "assets", "gems", "black.png"));
 await access(path.join(root, "supabase", "gemquest_daily_leaderboard.sql"));
 await import(pathToFileURL(path.join(root, "src", "gameLogic.js")).href);
 
