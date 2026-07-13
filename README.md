@@ -74,14 +74,48 @@ El reinicio diario se modela con la columna `score_date`: la interfaz solo consu
 
 ## Pruebas
 
+Ejecutar todas las pruebas automatizadas:
+
 ```bash
 npm test
 ```
 
+Este comando usa el runner nativo de Node.js (`node --test`) y valida la logica del tablero, puntuacion, progreso, ranking diario, renderizado de vistas y estados principales.
+
 ## Validacion de build
+
+Validar que los archivos estaticos, modulos y assets principales existan:
 
 ```bash
 npm run build
+```
+
+## CI/CD
+
+El proyecto cuenta con un pipeline de integracion continua en GitHub Actions.
+
+Archivo del pipeline:
+
+```text
+.github/workflows/ci.yml
+```
+
+El pipeline se ejecuta automaticamente en cada `push` o `pull_request` y realiza:
+
+```text
+Checkout del codigo
+Setup Node.js 24
+npm install
+npm run build
+npm test
+```
+
+La parte de despliegue continuo se realiza con Render conectado al repositorio de GitHub. Cuando se sube un commit a `master`, Render construye la imagen Docker y publica la nueva version.
+
+URL de produccion:
+
+```text
+https://gamequest-yust.onrender.com
 ```
 
 ## Estructura
@@ -117,7 +151,7 @@ npm run build
 
 ## DevOps
 
-El repositorio incluye un pipeline de GitHub Actions que ejecuta `npm run build` y `npm test` en cada push o pull request.
+El repositorio incluye GitHub Actions para CI, Render para CD y Docker para ejecutar la aplicacion en un entorno reproducible.
 
 Tambien incluye `.dockerignore` para excluir del contexto Docker archivos que no son necesarios en la imagen, como documentacion, pruebas, configuracion local, variables de entorno y assets fuente no usados por la app final.
 
@@ -135,7 +169,3 @@ Abrir `http://127.0.0.1:4173`.
 El progreso se guarda en `localStorage` bajo la clave `gemquest-progress-v1:<clerk-user-id>`. Se almacena el ultimo nivel desbloqueado, los records por nivel y la preferencia de sonido para cada cuenta.
 
 El ranking diario se guarda en Supabase dentro de `gemquest_daily_scores`, separado por `score_date`, `level_id` y `player_id`.
-
-## Bitacora de cambios
-
-La bitacora completa del proyecto se mantiene en `docs/modelado.md`, que funciona como documento vivo del entregable.
