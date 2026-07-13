@@ -762,7 +762,6 @@ El SQL de creacion se encuentra en `supabase/gemquest_daily_leaderboard.sql`.
 
 # 4. Bitacora de actualizaciones del documento vivo
 
-Esta bitacora consolida los cambios que antes estaban en `README.md`, los commits del repositorio y las actualizaciones recientes del entregable. El README queda como guia de ejecucion; este archivo queda como documento vivo oficial.
 
 ## 4.1 Responsables normalizados desde Git
 
@@ -776,8 +775,8 @@ Esta bitacora consolida los cambios que antes estaban en `README.md`, los commit
 
 ## 4.2 Bitacora consolidada de cambios
 
-| Fecha | Responsable | Fuente | Cambios realizados |
-| --- | --- | --- | --- |
+| Fecha | Responsable | Cambios realizados |
+| --- | --- | --- |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se movio la bitacora larga del `README.md` a `docs/modelado.md` para mantener un unico documento vivo, y el README quedo como guia de ejecucion y configuracion. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se agrego ranking diario por nivel con Supabase: ventana Top 10, variables `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`, SQL de tabla, RLS, funcion de escritura y guia de ejecucion Docker. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se corrigio el permiso de lectura del ranking agregando `grant select on public.gemquest_daily_scores to anon, authenticated`, manteniendo RLS activo. |
@@ -811,3 +810,35 @@ Esta bitacora consolida los cambios que antes estaban en `README.md`, los commit
 | 2026-07-07 | Jordy Sebastian Bravo Veliz | Se mejoraron reglas y experiencia visual: objetivos, movimientos, animaciones, fichas diferenciadas y descuento de movimiento en intentos adyacentes. |
 | 2026-07-07 | Jordy Sebastian Bravo Veliz | Se realizo la implementacion inicial de GemQuest con tablero Match-3, intercambio de gemas, combinaciones, puntuacion, niveles y estructura base del proyecto. |
 
+# 5. Retrospectiva final y metricas
+
+Como equipo se realizó una retrospectiva general para evaluar el proceso, las decisiones tecnicas y la colaboracion durante la construccion de GemQuest.
+
+## 5.1 Retrospectiva final del equipo
+
+| Aspecto evaluado | Resultado |
+| --- | --- |
+| Que funciono bien | La division por modulos permitio trabajar en paralelo: logica del tablero, interfaz, autenticacion, ranking y despliegue. |
+| Que se debe mejorar | Al integrar cambios de varias ramas aparecieron ajustes pendientes en documentacion, permisos de Supabase y configuracion de CI/CD. |
+| Leccion aprendida | Mantener el documento vivo actualizado evita contradicciones entre el MVP, los diagramas, el backlog y el codigo real. |
+| Decision para futuros proyectos | Validar el build Docker y el pipeline CI antes de presentar el despliegue para detectar errores de entorno a tiempo. |
+
+## 5.2 Metricas basicas del proyecto
+
+| Metrica | Valor aproximado | Interpretacion |
+| --- | --- | --- |
+| Velocidad del Sprint 1 | 6 historias completadas | Se completaron HU-01 a HU-06, correspondientes al nucleo jugable del tablero Match-3. |
+| Velocidad del Sprint 2 | 11 historias completadas | Se completaron HU-07 a HU-17, correspondientes a puntuacion, niveles, pantallas, persistencia, animaciones y sonidos. |
+| Velocidad total del MVP | 17 historias completadas | El backlog comprometido del MVP quedo completo sin agregar nuevas historias fuera de HU-01 a HU-17. |
+| Cycle time promedio | 1 a 2 dias por bloque funcional | Las tareas pequenas como UI o ajustes de reglas avanzaron en menos tiempo; autenticacion, PWA, ranking y despliegue requirieron mas validacion. |
+| Burndown cualitativo | Descenso progresivo con concentracion final en integracion | El avance fue estable en mecanicas e interfaz, y al final se concentraron tareas de integracion, documentacion, CI/CD y despliegue. |
+| Defectos corregidos al cierre | 4 incidencias principales | Se corrigieron permisos de Supabase, configuracion de `.env`, build Docker en Render y compatibilidad del pipeline CI. |
+
+## 5.3 Lecciones aprendidas
+
+- La separacion entre logica de juego y presentacion facilito probar reglas sin depender del DOM.
+- La maquina de estados ayudo a explicar el flujo de juego, desde seleccion de nivel hasta victoria o derrota.
+- C4 fue util para diferenciar el sistema, contenedores, componentes, servicios externos y responsabilidades.
+- Clerk simplifico la autenticacion, pero exigio configurar correctamente dominios y variables publicas.
+- Supabase permitio agregar ranking diario rapidamente, pero fue necesario aplicar RLS, permisos y funcion SQL controlada.
+- Render facilito el despliegue continuo, aunque obligo a alinear Docker, Node.js y GitHub Actions.

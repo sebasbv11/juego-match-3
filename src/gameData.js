@@ -10,7 +10,7 @@ export const GEM_META = [
 export const LEVELS = [
   {
     id: 1,
-    name: "Brillo inicial",
+    name: "spark final",
     summary: "Alcanza la puntuacion meta.",
     rows: 8,
     cols: 8,
