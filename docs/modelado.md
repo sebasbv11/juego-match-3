@@ -777,6 +777,7 @@ El SQL de creacion se encuentra en `supabase/gemquest_daily_leaderboard.sql`.
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
+| 2026-07-14 | Jordy Sebastián Bravo Véliz | Se ajustó el service worker para no cachear `/clerk-config.json` ni `/supabase-config.json`, manteniendo esas configuraciones públicas como solicitudes de red y renovando el caché PWA a `gemquest-pwa-v2`. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se movio la bitacora larga del `README.md` a `docs/modelado.md` para mantener un unico documento vivo, y el README quedo como guia de ejecucion y configuracion. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se agrego ranking diario por nivel con Supabase: ventana Top 10, variables `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`, SQL de tabla, RLS, funcion de escritura y guia de ejecucion Docker. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se corrigio el permiso de lectura del ranking agregando `grant select on public.gemquest_daily_scores to anon, authenticated`, manteniendo RLS activo. |
