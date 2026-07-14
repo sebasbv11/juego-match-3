@@ -1,13 +1,5 @@
-const SUPABASE_SCRIPT_SOURCES = [
-  "/node_modules/@supabase/supabase-js/dist/umd/supabase.js",
-  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"
-];
-
-const LEADERBOARD_TABLE = "gemquest_daily_scores";
 const DEFAULT_TIME_ZONE = "America/Guayaquil";
 const DEFAULT_LIMIT = 10;
-
-let supabaseClientPromise = null;
 
 export function createLeaderboardState(overrides = {}) {
   return {
@@ -21,9 +13,14 @@ export function createLeaderboardState(overrides = {}) {
 
 export async function loadDailyLeaderboard(levelId, options = {}) {
   const scoreDate = options.scoreDate ?? getDailyScoreDate();
-  const client = await getSupabaseClient();
+  const params = new URLSearchParams({
+    levelId: String(Number(levelId) || 1),
+    scoreDate,
+    limit: String(options.limit ?? DEFAULT_LIMIT)
+  });
 
-  if (!client) {
+  const payload = await fetchLeaderboardJson(`/api/leaderboard?${params}`);
+  if (payload.status === "unconfigured") {
     return createLeaderboardState({
       status: "unconfigured",
       scoreDate,
@@ -31,52 +28,37 @@ export async function loadDailyLeaderboard(levelId, options = {}) {
     });
   }
 
-  const { data, error } = await client
-    .from(LEADERBOARD_TABLE)
-    .select("player_name, score, stars, moves_left, created_at")
-    .eq("score_date", scoreDate)
-    .eq("level_id", Number(levelId))
-    .order("score", { ascending: false })
-    .order("stars", { ascending: false })
-    .order("moves_left", { ascending: false })
-    .order("created_at", { ascending: true })
-    .limit(options.limit ?? DEFAULT_LIMIT);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const entries = normalizeLeaderboardEntries(data);
+  const entries = normalizeLeaderboardEntries(payload.entries || []);
   return createLeaderboardState({
     status: entries.length ? "ready" : "empty",
     entries,
-    scoreDate
+    scoreDate: payload.scoreDate || scoreDate
   });
 }
 
 export async function submitDailyScore(scoreData) {
-  const client = await getSupabaseClient();
   const scoreDate = scoreData.scoreDate ?? getDailyScoreDate();
+  const payload = await fetchLeaderboardJson("/api/leaderboard", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      scoreDate,
+      levelId: Number(scoreData.levelId),
+      playerId: String(scoreData.playerId || "anonymous"),
+      playerName: sanitizePlayerName(scoreData.playerName),
+      score: Math.max(0, Number(scoreData.score) || 0),
+      stars: Math.min(3, Math.max(0, Number(scoreData.stars) || 0)),
+      movesLeft: Math.max(0, Number(scoreData.movesLeft) || 0)
+    })
+  });
 
-  if (!client) {
+  if (payload.status === "unconfigured") {
     return { status: "unconfigured", scoreDate };
   }
 
-  const { error } = await client.rpc("submit_gemquest_daily_score", {
-    p_score_date: scoreDate,
-    p_level_id: Number(scoreData.levelId),
-    p_player_id: String(scoreData.playerId || "anonymous"),
-    p_player_name: sanitizePlayerName(scoreData.playerName),
-    p_score: Math.max(0, Number(scoreData.score) || 0),
-    p_stars: Math.min(3, Math.max(0, Number(scoreData.stars) || 0)),
-    p_moves_left: Math.max(0, Number(scoreData.movesLeft) || 0)
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return { status: "submitted", scoreDate };
+  return { status: "submitted", scoreDate: payload.scoreDate || scoreDate };
 }
 
 export function getDailyScoreDate(date = new Date(), timeZone = DEFAULT_TIME_ZONE) {
@@ -116,71 +98,20 @@ export function sanitizePlayerName(value) {
   return (normalized || "Jugador").slice(0, 40);
 }
 
-async function getSupabaseClient() {
-  if (!supabaseClientPromise) {
-    supabaseClientPromise = createSupabaseClient();
-  }
-
-  return supabaseClientPromise;
-}
-
-async function createSupabaseClient() {
-  const config = await loadSupabaseConfig();
-  if (!config.url || !config.publishableKey) {
-    return null;
-  }
-
-  await loadSupabaseScript();
-  const factory = globalThis.supabase?.createClient;
-  if (typeof factory !== "function") {
-    throw new Error("Supabase JS no esta disponible en el navegador.");
-  }
-
-  return factory(config.url, config.publishableKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false
-    }
+async function fetchLeaderboardJson(path, options = {}) {
+  const response = await fetch(path, {
+    cache: "no-store",
+    ...options
   });
-}
+  const payload = await response.json().catch(() => ({}));
 
-async function loadSupabaseConfig() {
-  const response = await fetch("/supabase-config.json", { cache: "no-store" });
+  if (response.status === 503 && payload.status === "unconfigured") {
+    return payload;
+  }
+
   if (!response.ok) {
-    throw new Error("No se pudo leer la configuracion publica de Supabase.");
+    throw new Error(payload.error || "No se pudo consultar el ranking diario.");
   }
 
-  return response.json();
-}
-
-async function loadSupabaseScript() {
-  if (globalThis.supabase?.createClient) {
-    return;
-  }
-
-  for (const source of SUPABASE_SCRIPT_SOURCES) {
-    try {
-      await appendScript(source);
-      if (globalThis.supabase?.createClient) {
-        return;
-      }
-    } catch {
-      // Try the next source.
-    }
-  }
-
-  throw new Error("No se pudo cargar Supabase JS.");
-}
-
-function appendScript(source) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    script.src = source;
-    script.addEventListener("load", resolve, { once: true });
-    script.addEventListener("error", reject, { once: true });
-    document.head.append(script);
-  });
+  return payload;
 }

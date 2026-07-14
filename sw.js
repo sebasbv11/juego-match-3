@@ -1,4 +1,4 @@
-const CACHE_NAME = "gemquest-pwa-v2";
+const CACHE_NAME = "gemquest-pwa-v3";
 const NETWORK_ONLY_PATHS = new Set(["/clerk-config.json", "/supabase-config.json"]);
 const ASSETS = [
   "./",
@@ -55,7 +55,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (NETWORK_ONLY_PATHS.has(url.pathname)) {
+  if (NETWORK_ONLY_PATHS.has(url.pathname) || url.pathname.startsWith("/api/")) {
     event.respondWith(fetch(event.request));
     return;
   }

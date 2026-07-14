@@ -419,7 +419,7 @@ System_Ext(supabase, "Supabase", "Base de datos Postgres usada para ranking diar
 Rel(jugador, gemquest, "Juega, selecciona niveles e intercambia gemas", "Navegador web")
 Rel(gemquest, localStorage, "Guarda y consulta progreso del jugador", "API Web Storage")
 Rel(gemquest, clerk, "Autentica al jugador", "Clerk JS")
-Rel(gemquest, supabase, "Publica y consulta Top 10 diario", "Supabase JS / HTTPS")
+Rel(gemquest, supabase, "Publica y consulta Top 10 diario desde el servidor", "API REST / HTTPS")
 ```
 
 ### 2.2.2 Diagrama de Contenedores C4
@@ -431,7 +431,7 @@ title Diagrama de Contenedores C4 - GemQuest
 Person(jugador, "Jugador", "Usuario final del juego.")
 
 System_Boundary(gemquest, "GemQuest") {
-  Container(staticServer, "Servidor estatico", "Node.js / hosting estatico", "Entrega index.html, CSS y modulos JavaScript.")
+  Container(staticServer, "Servidor estatico y API de ranking", "Node.js / hosting estatico", "Entrega index.html, CSS y modulos JavaScript; expone /api/leaderboard sin enviar la key de Supabase al navegador.")
   Container(webApp, "Aplicacion web", "HTML, CSS, JavaScript", "Renderiza pantallas, tablero, HUD, seleccion de nivel, resultados, ranking, estrellas y feedback de combos.")
   Container(gameLogic, "Modulo de logica del juego", "JavaScript ES Modules", "Genera tablero, valida intercambios, detecta combinaciones, resuelve cascadas, calcula puntaje y evalua objetivos.")
   ContainerDb(storage, "LocalStorage", "Web Storage API", "Persistencia de nivel desbloqueado, mejores puntuaciones, estrellas de maestria y preferencia de sonido.")
@@ -447,7 +447,8 @@ Rel(webApp, gameLogic, "Invoca reglas del juego")
 Rel(gameLogic, webApp, "Devuelve estado actualizado")
 Rel(webApp, storage, "Lee y escribe progreso")
 Rel(webApp, clerk, "Inicia sesion y obtiene datos publicos del jugador", "HTTPS")
-Rel(webApp, supabase, "Guarda puntajes ganados y consulta ranking diario", "HTTPS")
+Rel(webApp, staticServer, "Guarda puntajes y consulta ranking", "HTTP /api/leaderboard")
+Rel(staticServer, supabase, "Ejecuta consultas y RPC de ranking", "API REST / HTTPS")
 ```
 
 ### 2.2.3 Vista de Componentes
@@ -466,10 +467,11 @@ Container_Boundary(webApp, "Aplicacion web") {
   Component(gameState, "gameState.js", "Estado de partida", "Aplica movimientos, cascadas, puntaje y victoria/derrota.")
   Component(storageModule, "storage.js", "Persistencia local", "Lee y escribe progreso del jugador.")
   Component(mastery, "mastery.js", "Maestria", "Calcula estrellas y conserva el mejor resultado.")
-  Component(leaderboard, "leaderboard.js", "Ranking diario", "Carga Supabase JS, publica puntajes y consulta Top 10 por nivel.")
+  Component(leaderboard, "leaderboard.js", "Ranking diario", "Consume /api/leaderboard para publicar puntajes y consultar Top 10 por nivel.")
   Component(audio, "audio.js", "Audio", "Reproduce tonos y musica de fondo.")
 }
 
+Container(staticServer, "Servidor estatico y API de ranking", "Node.js", "Sirve la app y proxy de ranking.")
 ContainerDb(storage, "LocalStorage", "Web Storage API", "Progreso y preferencias.")
 System_Ext(clerk, "Clerk", "Autenticacion.")
 System_Ext(supabase, "Supabase Postgres", "Ranking diario.")
@@ -484,7 +486,7 @@ Rel(app, leaderboard, "Publica y consulta ranking")
 Rel(app, audio, "Dispara feedback sonoro")
 Rel(storageModule, storage, "Lee/escribe")
 Rel(app, clerk, "Valida sesion")
-Rel(leaderboard, supabase, "RPC y consultas")
+Rel(leaderboard, staticServer, "API interna de ranking")
 ```
 
 ## 2.3 Modelo de Dominio
@@ -777,7 +779,7 @@ El SQL de creacion se encuentra en `supabase/gemquest_daily_leaderboard.sql`.
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
-| 2026-07-14 | Jordy Sebastián Bravo Véliz | Se ajustó el service worker para no cachear `/clerk-config.json` ni `/supabase-config.json`, manteniendo esas configuraciones públicas como solicitudes de red y renovando el caché PWA a `gemquest-pwa-v2`. |
+| 2026-07-14 | Jordy Sebastián Bravo Véliz | Se reemplazó la conexión directa del navegador con Supabase por el endpoint backend `/api/leaderboard`, se retiró la exposición de `/supabase-config.json` y se renovó el caché PWA a `gemquest-pwa-v3`. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se movio la bitacora larga del `README.md` a `docs/modelado.md` para mantener un unico documento vivo, y el README quedo como guia de ejecucion y configuracion. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se agrego ranking diario por nivel con Supabase: ventana Top 10, variables `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`, SQL de tabla, RLS, funcion de escritura y guia de ejecucion Docker. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se corrigio el permiso de lectura del ranking agregando `grant select on public.gemquest_daily_scores to anon, authenticated`, manteniendo RLS activo. |
