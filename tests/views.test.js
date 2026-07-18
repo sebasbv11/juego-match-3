@@ -165,6 +165,38 @@ test("level screens can render the daily leaderboard window", () => {
   assert.match(html, /1320/);
 });
 
+test("leaderboard refresh keeps the table visible while loading", () => {
+  const html = renderLevels(
+    {
+      unlockedLevel: 3,
+      bestScores: {},
+      starsByLevel: {},
+      sound: true
+    },
+    {
+      leaderboardOpen: true,
+      leaderboardLevelId: 2,
+      leaderboardState: {
+        status: "loading",
+        scoreDate: "2026-07-12",
+        entries: [
+          {
+            rank: 1,
+            playerName: "Adriel",
+            score: 1320,
+            stars: 3,
+            movesLeft: 5
+          }
+        ]
+      }
+    }
+  );
+
+  assert.match(html, /Actualizando ranking/);
+  assert.match(html, /ranking-table/);
+  assert.match(html, /Adriel/);
+});
+
 test("game screens render swap animation classes", () => {
   const currentGame = createGame(1);
 

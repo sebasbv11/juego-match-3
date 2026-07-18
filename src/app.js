@@ -35,6 +35,7 @@ let leaderboardOpen = false;
 let leaderboardLevelId = 1;
 let leaderboardState = createLeaderboardState();
 let leaderboardRequestId = 0;
+let leaderboardLoadingTimer = null;
 
 app.addEventListener("click", (event) => {
   const authTarget = event.target.closest("[data-auth-action]");
@@ -303,6 +304,11 @@ function handleAction(action, data) {
 
   if (action === "close-ranking") {
     leaderboardOpen = false;
+    leaderboardRequestId += 1;
+    if (leaderboardLoadingTimer) {
+      clearTimeout(leaderboardLoadingTimer);
+      leaderboardLoadingTimer = null;
+    }
     render();
   }
 
@@ -603,17 +609,41 @@ async function openLeaderboard(levelId) {
 async function refreshLeaderboard(levelId) {
   const requestId = ++leaderboardRequestId;
   leaderboardLevelId = Math.min(Math.max(Number(levelId) || 1, 1), LEVELS.length);
-  leaderboardState = createLeaderboardState({ status: "loading", entries: [] });
-  render();
+  if (leaderboardLoadingTimer) {
+    clearTimeout(leaderboardLoadingTimer);
+    leaderboardLoadingTimer = null;
+  }
+
+  const loadingState = createLeaderboardState({
+    status: "loading",
+    entries: leaderboardState.entries,
+    scoreDate: leaderboardState.scoreDate
+  });
+  leaderboardLoadingTimer = setTimeout(() => {
+    if (requestId !== leaderboardRequestId) {
+      return;
+    }
+
+    leaderboardState = loadingState;
+    render();
+  }, 120);
 
   try {
     const nextState = await loadDailyLeaderboard(leaderboardLevelId);
     if (requestId === leaderboardRequestId) {
+      if (leaderboardLoadingTimer) {
+        clearTimeout(leaderboardLoadingTimer);
+        leaderboardLoadingTimer = null;
+      }
       leaderboardState = nextState;
       render();
     }
   } catch (error) {
     if (requestId === leaderboardRequestId) {
+      if (leaderboardLoadingTimer) {
+        clearTimeout(leaderboardLoadingTimer);
+        leaderboardLoadingTimer = null;
+      }
       leaderboardState = createLeaderboardState({
         status: "error",
         entries: [],

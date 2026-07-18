@@ -779,6 +779,7 @@ El SQL de creacion se encuentra en `supabase/gemquest_daily_leaderboard.sql`.
 
 | Fecha | Responsable | Cambios realizados |
 | --- | --- | --- |
+| 2026-07-18 | Jordy Sebastián Bravo Véliz | Se estabilizó la ventana del ranking diario para evitar parpadeos al abrirse, conservando la tabla visible mientras carga, retrasando el estado de espera y ajustando el renderizado de la tabla. |
 | 2026-07-18 | Jordy Sebastián Bravo Véliz | Se corrigieron observaciones de SonarCloud: se retiraron scripts externos duplicados de Clerk en `index.html`, se endureció el `Dockerfile` con usuario no root y copias explícitas, y se limpió un code smell menor del servidor. |
 | 2026-07-14 | Jordy Sebastián Bravo Véliz | Se reemplazó la conexión directa del navegador con Supabase por el endpoint backend `/api/leaderboard`, se retiró la exposición de `/supabase-config.json` y se renovó el caché PWA a `gemquest-pwa-v3`. |
 | 2026-07-12 | Jordy Sebastian Bravo Veliz | Se movio la bitacora larga del `README.md` a `docs/modelado.md` para mantener un unico documento vivo, y el README quedo como guia de ejecucion y configuracion. |

@@ -2154,7 +2154,6 @@ body.overlay-locked .app {
   padding: 20px;
   background: rgba(5, 10, 24, 0.62);
   backdrop-filter: blur(5px);
-  animation: overlayFadeIn 160ms ease both;
 }
 
 .ranking-panel {
@@ -2237,6 +2236,10 @@ body.overlay-locked .app {
   line-height: 1.45;
 }
 
+.ranking-message.ranking-loading {
+  margin-bottom: 12px;
+}
+
 .ranking-message.error {
   border-color: rgba(248, 113, 113, 0.34);
   color: #fecaca;
@@ -2278,6 +2281,10 @@ body.overlay-locked .app {
   color: #99f6e4;
   font-size: 0.78rem;
   text-transform: uppercase;
+}
+
+.ranking-table-loading .ranking-row.placeholder {
+  opacity: 0.72;
 }
 
 .ranking-actions {

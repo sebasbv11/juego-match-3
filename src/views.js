@@ -472,7 +472,17 @@ function renderLeaderboard({ isOpen, selectedLevelId, state }) {
 
 function renderLeaderboardBody(state) {
   if (state.status === "loading") {
-    return `<p class="ranking-message">Cargando ranking...</p>`;
+    if (state.entries.length) {
+      return `
+        <p class="ranking-message ranking-loading" aria-live="polite">Actualizando ranking...</p>
+        ${renderLeaderboardTable(state.entries, state.scoreDate)}
+      `;
+    }
+
+    return `
+      <p class="ranking-message ranking-loading" aria-live="polite">Cargando ranking...</p>
+      ${renderLeaderboardPlaceholderTable()}
+    `;
   }
 
   if (state.status === "unconfigured") {
@@ -487,8 +497,12 @@ function renderLeaderboardBody(state) {
     return `<p class="ranking-message">Aun no hay puntuaciones registradas hoy.</p>`;
   }
 
+  return renderLeaderboardTable(state.entries, state.scoreDate);
+}
+
+function renderLeaderboardTable(entries, scoreDate) {
   return `
-    <div class="ranking-table" role="table" aria-label="Tabla de ranking diario">
+    <div class="ranking-table" role="table" aria-label="Tabla de ranking diario" aria-busy="false" data-score-date="${escapeHtml(scoreDate || "")}">
       <div class="ranking-row ranking-head" role="row">
         <span>#</span>
         <span>Jugador</span>
@@ -496,19 +510,48 @@ function renderLeaderboardBody(state) {
         <span>Est.</span>
         <span>Mov.</span>
       </div>
-      ${state.entries.map((entry) => renderLeaderboardRow(entry)).join("")}
+      ${entries.map((entry) => renderLeaderboardRow(entry)).join("")}
     </div>
   `;
 }
 
-function renderLeaderboardRow(entry) {
+function renderLeaderboardPlaceholderTable() {
+  const placeholders = Array.from({ length: 4 }, (_, index) => ({
+    rank: index + 1,
+    playerName: index === 0 ? "Esperando resultados..." : " ",
+    score: "—",
+    stars: "—",
+    movesLeft: "—"
+  }));
+
   return `
-    <div class="ranking-row" role="row">
+    <div class="ranking-table ranking-table-loading" role="table" aria-label="Tabla de ranking diario" aria-busy="true">
+      <div class="ranking-row ranking-head" role="row">
+        <span>#</span>
+        <span>Jugador</span>
+        <span>Puntos</span>
+        <span>Est.</span>
+        <span>Mov.</span>
+      </div>
+      ${placeholders.map((entry) => renderLeaderboardRow(entry, { placeholder: true })).join("")}
+    </div>
+  `;
+}
+
+function renderLeaderboardRow(entry, options = {}) {
+  const placeholderClass = options.placeholder ? " placeholder" : "";
+  const playerName = options.placeholder ? entry.playerName : escapeHtml(entry.playerName);
+  const score = entry.score;
+  const stars = entry.stars;
+  const movesLeft = entry.movesLeft;
+
+  return `
+    <div class="ranking-row${placeholderClass}" role="row"${options.placeholder ? ' aria-hidden="true"' : ""}>
       <span>${entry.rank}</span>
-      <strong>${escapeHtml(entry.playerName)}</strong>
-      <span>${entry.score}</span>
-      <span>${entry.stars}</span>
-      <span>${entry.movesLeft}</span>
+      <strong>${playerName}</strong>
+      <span>${score}</span>
+      <span>${stars}</span>
+      <span>${movesLeft}</span>
     </div>
   `;
 }
