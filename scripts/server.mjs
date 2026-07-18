@@ -123,15 +123,20 @@ async function requestSupabase(pathname, options = {}) {
   }
 
   const supabaseUrl = `${config.url.replace(/\/$/, "")}${pathname}`;
+  const headers = {
+    apikey: config.publishableKey,
+    Authorization: `Bearer ${config.publishableKey}`,
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  };
+
+  if (options.headers) {
+    Object.assign(headers, options.headers);
+  }
+
   const response = await fetch(supabaseUrl, {
     ...options,
-    headers: {
-      apikey: config.publishableKey,
-      Authorization: `Bearer ${config.publishableKey}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
+    headers
   });
 
   const text = await response.text();
