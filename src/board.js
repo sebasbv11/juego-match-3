@@ -43,65 +43,53 @@ export function findMatches(board) {
   const keys = new Set();
   const groups = [];
 
-  for (let row = 0; row < rows; row += 1) {
-    let col = 0;
-    while (col < cols) {
-      const cell = board[row][col];
-      if (cell.blocker || cell.gem === null) {
-        col += 1;
-        continue;
-      }
-
-      const group = [{ row, col }];
-      let nextCol = col + 1;
-      while (
-        nextCol < cols &&
-        !board[row][nextCol].blocker &&
-        board[row][nextCol].gem === cell.gem
-      ) {
-        group.push({ row, col: nextCol });
-        nextCol += 1;
-      }
-
-      if (group.length >= 3) {
-        addGroup(group, keys, groups);
-      }
-      col = nextCol;
-    }
-  }
-
-  for (let col = 0; col < cols; col += 1) {
-    let row = 0;
-    while (row < rows) {
-      const cell = board[row][col];
-      if (cell.blocker || cell.gem === null) {
-        row += 1;
-        continue;
-      }
-
-      const group = [{ row, col }];
-      let nextRow = row + 1;
-      while (
-        nextRow < rows &&
-        !board[nextRow][col].blocker &&
-        board[nextRow][col].gem === cell.gem
-      ) {
-        group.push({ row: nextRow, col });
-        nextRow += 1;
-      }
-
-      if (group.length >= 3) {
-        addGroup(group, keys, groups);
-      }
-      row = nextRow;
-    }
-  }
+  scanMatchLines(board, rows, cols, (line, index) => ({ row: line, col: index }), keys, groups);
+  scanMatchLines(board, cols, rows, (line, index) => ({ row: index, col: line }), keys, groups);
 
   return {
     keys,
     cells: Array.from(keys, parsePositionKey),
     groups
   };
+}
+
+function scanMatchLines(board, lineCount, lineLength, positionAt, keys, groups) {
+  for (let line = 0; line < lineCount; line += 1) {
+    let index = 0;
+
+    while (index < lineLength) {
+      const start = positionAt(line, index);
+      const cell = board[start.row][start.col];
+      if (cell.blocker || cell.gem === null) {
+        index += 1;
+        continue;
+      }
+
+      const group = collectMatchingRun(board, line, index, lineLength, positionAt, cell.gem);
+      if (group.length >= 3) {
+        addGroup(group, keys, groups);
+      }
+      index += group.length;
+    }
+  }
+}
+
+function collectMatchingRun(board, line, startIndex, lineLength, positionAt, gem) {
+  const group = [];
+  let index = startIndex;
+
+  while (index < lineLength) {
+    const position = positionAt(line, index);
+    const cell = board[position.row][position.col];
+    if (cell.blocker || cell.gem !== gem) {
+      break;
+    }
+
+    group.push(position);
+    index += 1;
+  }
+
+  return group;
 }
 
 export function swapGems(board, from, to) {

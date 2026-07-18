@@ -178,9 +178,9 @@ function renderLevelButton(level, progress) {
   const locked = level.id > progress.unlockedLevel;
   const bestScore = progress.bestScores[level.id] ?? 0;
   const stars = progress.starsByLevel[level.id] ?? 0;
-  const mapState = locked ? "locked" : isLevelComplete(level, progress) ? "complete" : "current";
-  const icon = locked ? "" : mapState === "current" && level.id === 2 ? "" : level.id === 3 ? "2" : "";
-  const stateCopy = locked ? "Bloqueado" : mapState === "complete" ? "Completado" : "Jugar";
+  const mapState = getMapState(level, progress, locked);
+  const icon = !locked && level.id === 3 ? "2" : "";
+  const stateCopy = getMapStateCopy(mapState);
   return `
     <button
       class="map-node node-${level.id} ${mapState}"
@@ -194,6 +194,22 @@ function renderLevelButton(level, progress) {
       <span class="node-caption">${level.name}</span>
     </button>
   `;
+}
+
+function getMapState(level, progress, locked) {
+  if (locked) {
+    return "locked";
+  }
+
+  return isLevelComplete(level, progress) ? "complete" : "current";
+}
+
+function getMapStateCopy(mapState) {
+  if (mapState === "locked") {
+    return "Bloqueado";
+  }
+
+  return mapState === "complete" ? "Completado" : "Jugar";
 }
 
 function isLevelComplete(level, progress) {
@@ -218,6 +234,7 @@ function renderCell(currentGame, selectedCell, clearingCells, swapAnimation, cel
   const label = cell.blocker
     ? `Obstaculo en fila ${rowIndex + 1}, columna ${colIndex + 1}`
     : `${GEM_META[cell.gem].name} en fila ${rowIndex + 1}, columna ${colIndex + 1}`;
+  const content = renderCellContent(cell, clearing);
 
   return `
     <button
@@ -229,13 +246,18 @@ function renderCell(currentGame, selectedCell, clearingCells, swapAnimation, cel
       ${swapState.style}
       ${disabled ? "disabled" : ""}
     >
-      ${
-        cell.blocker
-          ? `<span class="blocker-mark" aria-hidden="true"></span>`
-          : `<span class="gem ${GEM_META[cell.gem].cssClass}" aria-hidden="true"></span>${clearing ? `<span class="match-burst" aria-hidden="true"></span>` : ""}`
-      }
+      ${content}
     </button>
   `;
+}
+
+function renderCellContent(cell, clearing) {
+  if (cell.blocker) {
+    return `<span class="blocker-mark" aria-hidden="true"></span>`;
+  }
+
+  const burst = clearing ? `<span class="match-burst" aria-hidden="true"></span>` : "";
+  return `<span class="gem ${GEM_META[cell.gem].cssClass}" aria-hidden="true"></span>${burst}`;
 }
 
 function getSwapState(swapAnimation, row, col) {

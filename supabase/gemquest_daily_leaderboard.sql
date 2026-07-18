@@ -44,6 +44,7 @@ security definer
 set search_path = public
 as $$
 declare
+  leaderboard_timezone constant text := 'America/Guayaquil';
   saved_score public.gemquest_daily_scores;
   clean_player_id text := left(nullif(trim(p_player_id), ''), 128);
   clean_player_name text := left(coalesce(nullif(trim(p_player_name), ''), 'Jugador'), 40);
@@ -69,7 +70,7 @@ begin
     moves_left
   )
   values (
-    coalesce(p_score_date, (now() at time zone 'America/Guayaquil')::date),
+    coalesce(p_score_date, (now() at time zone leaderboard_timezone)::date),
     p_level_id,
     clean_player_id,
     clean_player_name,
@@ -101,7 +102,7 @@ begin
     select *
       into saved_score
       from public.gemquest_daily_scores
-      where score_date = coalesce(p_score_date, (now() at time zone 'America/Guayaquil')::date)
+      where score_date = coalesce(p_score_date, (now() at time zone leaderboard_timezone)::date)
         and level_id = p_level_id
         and player_id = clean_player_id;
   end if;

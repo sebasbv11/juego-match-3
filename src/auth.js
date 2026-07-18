@@ -108,20 +108,6 @@ export function createAuthController({ onChange } = {}) {
       : typeof state.clerk?.mountSignIn === "function";
   }
 
-  function redirectToHostedAuth(mode) {
-    if (mode === "sign-up" && typeof state.clerk?.redirectToSignUp === "function") {
-      state.clerk.redirectToSignUp();
-      return true;
-    }
-
-    if (typeof state.clerk?.redirectToSignIn === "function") {
-      state.clerk.redirectToSignIn();
-      return true;
-    }
-
-    return false;
-  }
-
   function openHostedAuth(mode) {
     if (!state.clerk) {
       return;

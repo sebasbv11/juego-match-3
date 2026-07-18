@@ -73,7 +73,7 @@ app.addEventListener("pointerdown", (event) => {
   }
 
   const cellTarget = getCellTarget(event);
-  if (!cellTarget || cellTarget.disabled || !currentGame || currentGame.status !== "playing") {
+  if (!cellTarget || cellTarget.disabled || currentGame?.status !== "playing") {
     return;
   }
 
@@ -145,7 +145,7 @@ app.addEventListener("touchstart", (event) => {
   }
 
   const cellTarget = getCellTarget(event);
-  if (!cellTarget || cellTarget.disabled || !currentGame || currentGame.status !== "playing") {
+  if (!cellTarget || cellTarget.disabled || currentGame?.status !== "playing") {
     return;
   }
 
@@ -249,76 +249,69 @@ function handleAuthAction(action) {
 }
 
 function handleAction(action, data) {
-  if (action === "home") {
-    showHome();
+  switch (action) {
+    case "home":
+      showHome();
+      break;
+    case "levels":
+      showLevels();
+      break;
+    case "start-latest":
+      startLevel(progress.unlockedLevel);
+      break;
+    case "start-level":
+      startLevel(Number(data.level));
+      break;
+    case "retry":
+      startLevel(currentGame.level.id);
+      break;
+    case "next-level":
+      startLevel(Math.min(currentGame.level.id + 1, LEVELS.length));
+      break;
+    case "toggle-sound":
+      progress.sound = !progress.sound;
+      saveCurrentProgress();
+      updateBackgroundMusic(progress.sound);
+      render();
+      break;
+    case "reset-progress":
+      progress = createDefaultProgress();
+      saveCurrentProgress();
+      showLevels();
+      break;
+    case "open-info":
+      infoOpen = true;
+      render();
+      break;
+    case "close-info":
+      infoOpen = false;
+      render();
+      break;
+    case "open-ranking":
+      openLeaderboard(Number(data.level) || currentGame?.level.id || progress.unlockedLevel);
+      break;
+    case "close-ranking":
+      closeLeaderboard();
+      break;
+    case "leaderboard-level":
+      openLeaderboard(Number(data.level) || leaderboardLevelId);
+      break;
+    case "refresh-ranking":
+      refreshLeaderboard(leaderboardLevelId);
+      break;
+    default:
+      break;
   }
+}
 
-  if (action === "levels") {
-    showLevels();
+function closeLeaderboard() {
+  leaderboardOpen = false;
+  leaderboardRequestId += 1;
+  if (leaderboardLoadingTimer) {
+    clearTimeout(leaderboardLoadingTimer);
+    leaderboardLoadingTimer = null;
   }
-
-  if (action === "start-latest") {
-    startLevel(progress.unlockedLevel);
-  }
-
-  if (action === "start-level") {
-    startLevel(Number(data.level));
-  }
-
-  if (action === "retry") {
-    startLevel(currentGame.level.id);
-  }
-
-  if (action === "next-level") {
-    const nextLevel = Math.min(currentGame.level.id + 1, LEVELS.length);
-    startLevel(nextLevel);
-  }
-
-  if (action === "toggle-sound") {
-    progress.sound = !progress.sound;
-    saveCurrentProgress();
-    updateBackgroundMusic(progress.sound);
-    render();
-  }
-
-  if (action === "reset-progress") {
-    progress = createDefaultProgress();
-    saveCurrentProgress();
-    showLevels();
-  }
-
-  if (action === "open-info") {
-    infoOpen = true;
-    render();
-  }
-
-  if (action === "close-info") {
-    infoOpen = false;
-    render();
-  }
-
-  if (action === "open-ranking") {
-    const levelId = Number(data.level) || currentGame?.level.id || progress.unlockedLevel;
-    openLeaderboard(levelId);
-  }
-
-  if (action === "close-ranking") {
-    leaderboardOpen = false;
-    leaderboardRequestId += 1;
-    if (leaderboardLoadingTimer) {
-      clearTimeout(leaderboardLoadingTimer);
-      leaderboardLoadingTimer = null;
-    }
-    render();
-  }
-
-  if (action === "leaderboard-level") {
-    openLeaderboard(Number(data.level) || leaderboardLevelId);
-  }
-
-  if (action === "refresh-ranking") {
-    refreshLeaderboard(leaderboardLevelId);
-  }
+  render();
 }
 
 function showHome() {
@@ -359,7 +352,7 @@ function startLevel(levelId) {
 }
 
 function handleCellClick(row, col) {
-  if (!currentGame || currentGame.status !== "playing") {
+  if (currentGame?.status !== "playing") {
     return;
   }
 
@@ -399,7 +392,7 @@ function handleCellClick(row, col) {
 }
 
 function performSwap(from, to) {
-  if (!currentGame || currentGame.status !== "playing") {
+  if (currentGame?.status !== "playing") {
     return;
   }
 
@@ -417,7 +410,7 @@ function applyMoveResult(result) {
     clearingCells = new Set((result.clearedCells ?? []).map(positionKey));
     lastCombo = result.cascades > 1 ? result.cascades : 0;
     message = buildMoveMessage(result);
-    playTone(progress.sound, result.cascades > 2 ? 680 : result.cascades > 1 ? 560 : 420, 0.09);
+    playTone(progress.sound, getMatchTone(result.cascades), 0.09);
     finishIfNeeded();
     scheduleClearAnimation();
     return;
@@ -570,6 +563,14 @@ function renderGameScreen() {
     progress,
     ...getOverlayState()
   });
+}
+
+function getMatchTone(cascades) {
+  if (cascades > 2) {
+    return 680;
+  }
+
+  return cascades > 1 ? 560 : 420;
 }
 
 function getOverlayState() {
@@ -731,11 +732,7 @@ function updateDragVisual(event) {
   const limit = horizontal ? rect.width : rect.height;
   const dragX = horizontal ? clamp(rawX, -limit, limit) * 0.78 : 0;
   const dragY = horizontal ? 0 : clamp(rawY, -limit, limit) * 0.78;
-  const direction = !dragCell.moved
-    ? { row: 0, col: 0 }
-    : horizontal
-      ? { row: 0, col: Math.sign(dragX) }
-      : { row: Math.sign(dragY), col: 0 };
+  const direction = getDragDirection(dragCell.moved, horizontal, dragX, dragY);
   const target = direction.row || direction.col
     ? app.querySelector(`[data-row="${dragCell.row + direction.row}"][data-col="${dragCell.col + direction.col}"]`)
     : null;
@@ -770,6 +767,18 @@ function updateDragVisual(event) {
     cell.style.setProperty("--nudge-x", `${dragX * 0.1}px`);
     cell.style.setProperty("--nudge-y", `${dragY * 0.1}px`);
   });
+}
+
+function getDragDirection(moved, horizontal, dragX, dragY) {
+  if (!moved) {
+    return { row: 0, col: 0 };
+  }
+
+  if (horizontal) {
+    return { row: 0, col: Math.sign(dragX) };
+  }
+
+  return { row: Math.sign(dragY), col: 0 };
 }
 
 function clamp(value, min, max) {

@@ -29,6 +29,23 @@ test("initial boards are complete and do not start with matches", () => {
   }
 });
 
+test("match detection preserves horizontal and vertical groups at intersections", () => {
+  const board = boardFromGems([
+    [1, 0, 2],
+    [0, 0, 0],
+    [3, 0, 1]
+  ]);
+
+  const matches = findMatches(board);
+
+  assert.equal(matches.groups.length, 2);
+  assert.equal(matches.cells.length, 5);
+  assert.deepEqual(
+    new Set(matches.cells.map(({ row, col }) => `${row},${col}`)),
+    new Set(["0,1", "1,0", "1,1", "1,2", "2,1"])
+  );
+});
+
 test("adjacent swaps without matches are reverted but consume one move", () => {
   const level = {
     ...LEVELS[0],
