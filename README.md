@@ -2,18 +2,6 @@
 
 GemQuest es un juego web tipo Match-3 en evolución hacia una versión de producción para el Grupo B. El producto incluye tablero válido, intercambio de gemas adyacentes, detección de combinaciones, gravedad, recarga, puntuación, movimientos limitados, niveles, autenticación con Clerk, progreso por usuario, assets visuales personalizados y pantallas de resultado.
 
-## Funcionalidades principales
-
-- HU-01 a HU-06: tablero jugable, combinaciones, eliminación, gravedad y nuevas fichas.
-- HU-07 a HU-09: puntuación, movimientos limitados y objetivos por nivel.
-- HU-10 a HU-14: inicio, selección de nivel, victoria, derrota y persistencia de progreso por cuenta.
-- HU-15: mejor puntuación por nivel guardada por usuario autenticado y ranking diario online por nivel con Supabase.
-- HU-16/HU-17: fichas con siluetas distintas, animación al eliminar combinaciones y sonido básico generado en el navegador.
-- Interacción por clic o arrastre: el jugador puede seleccionar gemas con clic o arrastrar una gema hacia una celda adyacente.
-- Set visual personalizado de gemas en `assets/gems/`, con imágenes PNG uniformes para los seis tipos de ficha.
-- Overlay de victoria animado al completar un nivel, con resumen de puntuación, récord, botones de avance y efecto de confetti.
-- Regla actual: cada intercambio adyacente consume 1 movimiento, aunque no forme combinación.
-
 ## Experiencia visual
 
 - Las gemas se renderizan con assets PNG transparentes para mantener un estilo uniforme en el tablero.
@@ -33,14 +21,77 @@ GemQuest es un juego web tipo Match-3 en evolución hacia una versión de produc
 | 2 | Eliminar 20 gemas Zafiro | 20 | Media |
 | 3 | Romper 8 obstáculos | 24 | Alta |
 
-## Ejecución local
+## Requisitos
+
+Antes de instalar el proyecto se necesita:
+
+- Git.
+- Node.js 20 o superior.
+- npm, incluido con Node.js.
+- Una aplicación de Clerk para la autenticación.
+- Un proyecto de Supabase para habilitar el ranking diario.
+
+Docker es opcional y solo se requiere para ejecutar la versión contenedorizada.
+
+## Instalación
+
+1. Clonar el repositorio y entrar en la carpeta del proyecto:
+
+```bash
+git clone https://github.com/sebasbv11/juego-match-3.git
+cd juego-match-3
+```
+
+2. Instalar las dependencias:
 
 ```bash
 npm install
+```
+
+3. Crear el archivo local de variables de entorno a partir del ejemplo:
+
+En Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+En Linux o macOS:
+
+```bash
+cp .env.example .env
+```
+
+4. Completar `.env` con las llaves públicas de Clerk y Supabase. No se deben agregar llaves secretas ni subir este archivo al repositorio.
+
+## Ejecución
+
+Iniciar el servidor local:
+
+```bash
 npm start
 ```
 
-Abrir `http://127.0.0.1:4173`.
+Abrir `http://127.0.0.1:4173` en el navegador. Si el puerto `4173` está ocupado, el servidor selecciona el siguiente puerto disponible y muestra la dirección correcta en la terminal.
+
+La versión desplegada está disponible en:
+
+```text
+https://gamequest-yust.onrender.com
+```
+
+## Uso
+
+1. Registrarse o iniciar sesión mediante Clerk.
+2. Presionar **Jugar** o entrar en **Niveles** desde la pantalla de inicio.
+3. Seleccionar uno de los niveles desbloqueados.
+4. Intercambiar dos gemas adyacentes mediante clic o arrastre para formar combinaciones de tres o más fichas iguales.
+5. Cumplir el objetivo antes de agotar los movimientos. Cada intercambio consume un movimiento, aunque no produzca una combinación.
+6. Consultar la puntuación, los movimientos restantes y el avance del objetivo durante la partida.
+7. Al ganar, avanzar al siguiente nivel o volver al mapa. Al perder, usar la opción de reintento.
+8. Abrir **Top** para consultar el ranking diario de los diez mejores puntajes de cada nivel.
+
+El progreso, los niveles desbloqueados, los récords y la preferencia de sonido se conservan por cuenta en el navegador. El ranking requiere que Supabase esté configurado y disponible.
 
 ## Autenticación con Clerk
 
@@ -58,8 +109,6 @@ SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
 HOST=0.0.0.0
 PORT=4173
 ```
-
-El servidor solo expone esta llave pública al navegador desde `/clerk-config.json`; no uses `CLERK_SECRET_KEY` en código cliente. Cada cuenta guarda su progreso en una clave propia de `localStorage` basada en el ID de usuario de Clerk.
 
 ## Ranking diario con Supabase
 
