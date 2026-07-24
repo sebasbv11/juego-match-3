@@ -3,7 +3,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 COPY --chown=node:node index.html manifest.webmanifest sw.js ./
 COPY --chown=node:node assets ./assets

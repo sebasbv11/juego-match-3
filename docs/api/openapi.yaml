@@ -1,0 +1,210 @@
+openapi: 3.1.0
+info:
+  title: API de ranking de GemQuest
+  version: 1.0.0
+  license:
+    name: Uso académico
+    url: https://github.com/sebasbv11/juego-match-3
+  description: |
+    API HTTP del ranking diario de GemQuest. El servidor Node.js valida los
+    parámetros y actúa como intermediario entre la aplicación y Supabase.
+security: []
+servers:
+  - url: https://gamequest-yust.onrender.com
+    description: Entorno cloud de staging y demostración
+  - url: http://127.0.0.1:4173
+    description: Entorno local
+tags:
+  - name: Ranking
+    description: Consulta y publicación de puntajes diarios por nivel.
+paths:
+  /api/leaderboard:
+    get:
+      tags:
+        - Ranking
+      summary: Consultar el ranking diario
+      description: Devuelve las mejores puntuaciones de un nivel y una fecha.
+      operationId: getDailyLeaderboard
+      parameters:
+        - $ref: "#/components/parameters/LevelId"
+        - $ref: "#/components/parameters/ScoreDate"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Ranking disponible.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardResponse"
+        "400":
+          description: Parámetros de consulta no válidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/SupabaseUnavailable"
+    post:
+      tags:
+        - Ranking
+      summary: Publicar el resultado de un nivel
+      description: |
+        Guarda el mejor resultado diario del jugador para el nivel. Si ya
+        existe un resultado, Supabase conserva el mejor puntaje y usa estrellas
+        y movimientos restantes como desempate.
+      operationId: submitDailyScore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreSubmission"
+      responses:
+        "200":
+          description: Resultado procesado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "405":
+          description: Método HTTP no permitido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/SupabaseUnavailable"
+components:
+  parameters:
+    LevelId:
+      name: levelId
+      in: query
+      description: Nivel consultado.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 3
+        default: 1
+    ScoreDate:
+      name: scoreDate
+      in: query
+      description: Fecha del ranking en formato ISO. Por defecto se usa el día actual de America/Guayaquil.
+      schema:
+        type: string
+        format: date
+    Limit:
+      name: limit
+      in: query
+      description: Número máximo de resultados.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 25
+        default: 10
+  responses:
+    SupabaseUnavailable:
+      description: Supabase no está configurado.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: unconfigured
+            error: Configura SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY para activar el ranking.
+  schemas:
+    LeaderboardEntry:
+      type: object
+      required:
+        - player_name
+        - score
+        - stars
+        - moves_left
+        - created_at
+      properties:
+        player_name:
+          type: string
+          maxLength: 40
+        score:
+          type: integer
+          minimum: 0
+        stars:
+          type: integer
+          minimum: 0
+          maximum: 3
+        moves_left:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+    LeaderboardResponse:
+      type: object
+      required:
+        - status
+        - scoreDate
+        - entries
+      properties:
+        status:
+          const: ready
+        scoreDate:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
+    ScoreSubmission:
+      type: object
+      required:
+        - levelId
+        - playerId
+        - playerName
+        - score
+      properties:
+        scoreDate:
+          type: string
+          format: date
+        levelId:
+          type: integer
+          minimum: 1
+          maximum: 3
+        playerId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        playerName:
+          type: string
+          minLength: 1
+          maxLength: 40
+        score:
+          type: integer
+          minimum: 0
+        stars:
+          type: integer
+          minimum: 0
+          maximum: 3
+          default: 0
+        movesLeft:
+          type: integer
+          minimum: 0
+          default: 0
+    SubmissionResponse:
+      type: object
+      required:
+        - status
+        - scoreDate
+      properties:
+        status:
+          const: submitted
+        scoreDate:
+          type: string
+          format: date
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        status:
+          type: string
+        error:
+          type: string

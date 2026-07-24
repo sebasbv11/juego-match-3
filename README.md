@@ -26,7 +26,7 @@ GemQuest es un juego web tipo Match-3 en evolución hacia una versión de produc
 Antes de instalar el proyecto se necesita:
 
 - Git.
-- Node.js 20 o superior.
+- Node.js 24 o superior.
 - npm, incluido con Node.js.
 - Una aplicación de Clerk para la autenticación.
 - Un proyecto de Supabase para habilitar el ranking diario.
@@ -45,7 +45,7 @@ cd juego-match-3
 2. Instalar las dependencias:
 
 ```bash
-npm install
+npm ci
 ```
 
 3. Crear el archivo local de variables de entorno a partir del ejemplo:
@@ -131,6 +131,12 @@ npm test
 
 Este comando usa el runner nativo de Node.js (`node --test`) y valida la lógica del tablero, puntuación, progreso, ranking diario, renderizado de vistas y estados principales.
 
+Ejecutar las pruebas con reporte de cobertura y un umbral mínimo de 60 % en líneas:
+
+```bash
+npm run test:coverage
+```
+
 ## Validación de build
 
 Validar que los archivos estáticos, módulos y assets principales existan:
@@ -154,18 +160,28 @@ El pipeline se ejecuta automáticamente en cada `push` o `pull_request` y realiz
 ```text
 Checkout del código
 Setup Node.js 24
-npm install
+npm ci
 npm run build
-npm test
+npm run test:coverage
 ```
 
-La parte de despliegue continuo se realiza con Render conectado al repositorio de GitHub. Cuando se sube un commit a `master`, Render construye la imagen Docker y publica la nueva versión.
+La parte de despliegue continuo se realiza con Render conectado al repositorio de GitHub. Cuando se integra un commit en `master`, Render construye la imagen Docker y publica la nueva versión. Para este proyecto académico, el servicio público de Render funciona como entorno de staging y demostración.
 
 URL de producción:
 
 ```text
 https://gamequest-yust.onrender.com
 ```
+
+## Calidad y seguridad
+
+El pipeline aplica un umbral mínimo de 60 % de cobertura de líneas y ejecuta `npm audit` para detener vulnerabilidades de severidad alta o crítica. El análisis estático complementario se consulta en:
+
+```text
+https://sonarcloud.io/summary/new_code?id=sebasbv11_juego-match-3&branch=master
+```
+
+Las prácticas de gestión de secretos, HTTPS, RLS y riesgos residuales están documentadas en [`SECURITY.md`](SECURITY.md).
 
 ## Estructura
 
@@ -212,6 +228,30 @@ docker run --rm -p 4173:4173 --env-file .env gemquest
 ```
 
 Abrir `http://127.0.0.1:4173`.
+
+### Estrategia de ramas
+
+El equipo aplica GitHub Flow:
+
+1. Crear una rama corta desde `master`, por ejemplo `feature/ranking-diario`.
+2. Implementar y verificar los cambios localmente.
+3. Subir la rama y abrir un pull request.
+4. Esperar que GitHub Actions apruebe build, pruebas y cobertura.
+5. Integrar en `master`; Render inicia el despliegue automático.
+
+Las reglas completas se encuentran en [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+### Operación y recuperación
+
+La guía de monitoreo, backup, rollback e incidentes se encuentra en [`docs/operacion-devops.md`](docs/operacion-devops.md).
+
+## Documentación técnica
+
+- API del ranking: [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
+- Guía de contribución: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+- Política y prácticas de seguridad: [`SECURITY.md`](SECURITY.md).
+- Decisiones arquitectónicas: [`docs/adr/README.md`](docs/adr/README.md).
+- Documento vivo de modelado: [`docs/modelado.md`](docs/modelado.md).
 
 ## Persistencia
 
