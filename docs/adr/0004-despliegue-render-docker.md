@@ -10,7 +10,7 @@ La entrega requiere build y pruebas automatizadas, un entorno accesible y una fo
 ## Decisión
 
 - Ejecutar integración continua en GitHub Actions con Node.js 24.
-- Instalar dependencias mediante `npm ci`.
+- Instalar dependencias mediante `npm ci --ignore-scripts`.
 - Validar build y pruebas con cobertura mínima de 60 %.
 - Empaquetar la aplicación con Docker.
 - Conectar Render con la rama `master`.

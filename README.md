@@ -45,7 +45,7 @@ cd juego-match-3
 2. Instalar las dependencias:
 
 ```bash
-npm ci
+npm ci --ignore-scripts
 ```
 
 3. Crear el archivo local de variables de entorno a partir del ejemplo:
@@ -160,7 +160,7 @@ El pipeline se ejecuta automáticamente en cada `push` o `pull_request` y realiz
 ```text
 Checkout del código
 Setup Node.js 24
-npm ci
+npm ci --ignore-scripts
 npm run build
 npm run test:coverage
 ```

@@ -17,7 +17,7 @@ El servicio de Render funciona como staging académico y demostración pública.
 ## Flujo CI/CD
 
 1. El desarrollador crea una rama desde `master`.
-2. GitHub Actions ejecuta `npm ci`, `npm run build` y `npm run test:coverage`.
+2. GitHub Actions ejecuta `npm ci --ignore-scripts`, `npm run build` y `npm run test:coverage`.
 3. El pull request se integra cuando las verificaciones son aprobadas.
 4. Render detecta el nuevo commit de `master`.
 5. Render construye la imagen usando `Dockerfile`.

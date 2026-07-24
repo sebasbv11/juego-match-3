@@ -16,7 +16,7 @@ Las llaves incluidas en `.env` deben ser públicas de cliente. Nunca se deben al
 ```bash
 git clone https://github.com/sebasbv11/juego-match-3.git
 cd juego-match-3
-npm ci
+npm ci --ignore-scripts
 ```
 
 En Windows PowerShell:
